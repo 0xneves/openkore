@@ -66,6 +66,10 @@ sub tutorial {
     return unless $field; # Safety check - field must be loaded
     
     my $current_map = $field->baseName;
+    return unless $current_map; # Extra safety - map name must exist
+    
+    message "[" . $plugin_name . "] DEBUG: Current map is '$current_map'\n", "info";
+    
     my $tutorial_map = "iz_int";
     
     if ($current_map eq $tutorial_map) {
@@ -79,13 +83,17 @@ sub hasItem {
     my $item_id = shift;
     return 0 unless $char && $char->{inventory};
     
+    message "[" . $plugin_name . "] DEBUG: Searching for item ID $item_id\n", "info";
+    
     for my $item (@{$char->{inventory}->getItems()}) {
         next unless $item;
+        message "[" . $plugin_name . "] DEBUG: Found item nameID: $item->{nameID}, name: $item->{name}\n", "info";
         if ($item->{nameID} == $item_id) {
             return $item;
         }
     }
     
+    message "[" . $plugin_name . "] DEBUG: Item $item_id not found in inventory\n", "warning";
     return 0;
 }
 

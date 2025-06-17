@@ -6,7 +6,7 @@ use Globals qw($char $monstersList $field @monstersID);
 use Log qw(message);
 use Utils qw(distance);
 use AI;
-use Misc qw(positionNearPortal);
+use Misc qw(positionNearPortal getBestTarget);
 use Utils::PathFinding;
 use Heimdall::ResourceManager;
 use Heimdall::ConfigManager;
@@ -118,7 +118,7 @@ sub huntMonsters {
     return unless $field;
     
     # First priority: Check for nearby monsters to attack
-    my $nearby_monster = findNearbyMonster();
+    my $nearby_monster = getBestTarget(\@monstersID, 1, 0);
     if ($nearby_monster) {
         # Found a monster - enter hunting mode
         if ($hunting_mode eq 'routing') {

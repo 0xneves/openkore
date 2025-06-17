@@ -9,7 +9,7 @@ use warnings;
 
 # Import required OpenKore modules
 use Plugins;
-use Globals qw($char %config $net);
+use Globals qw($char %config $net $messageSender);
 use Log qw(message);
 use Commands;
 use Utils qw(timeOut);
@@ -49,27 +49,61 @@ sub onUnload {
     Plugins::delHooks($hooks);
 }
 
-# Main loop - sends random letters to chat for testing
+# Main loop - core automation logic
 sub onMainLoop {
     return unless $net && $net->getState() == Network::IN_GAME;
-    return unless timeOut($timeout, 10); # Every 10 seconds
+    return unless timeOut($timeout, 10); # Check every 10 seconds
     
-    # Array of random letters
-    my @letters = ('a', 'b', 'c', 'i', 'e', 'p', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'o', 'q', 'r', 't', 'u', 'v', 'w', 'x', 'y', 'z');
-    
-    # Pick a random letter
-    my $random_letter = $letters[rand @letters];
-    
-    # Send to public chat
-    Commands::run("c $random_letter");
-    
-    message "[" . $plugin_name . "] Sent random letter: $random_letter\n", "success";
+    # Core automation logic will go here
+    tutorial();
     
     $timeout = time;
 }
 
+# Tutorial function - handles initial character setup
+sub tutorial {
+    return unless $char;
+    
+    my $current_map = $char->{map};
+    my $tutorial_map = "iz_int";
+    
+    if ($current_map eq $tutorial_map) {
+        message "[" . $plugin_name . "] In tutorial map ($tutorial_map) - checking for Caixa de Jornada...\n", "success";
+        useItemIfExists(23937); # Caixa de Jornada
+    }
+}
+
+# Check if item exists in inventory by ID
+sub hasItem {
+    my $item_id = shift;
+    return 0 unless $char && $char->{inventory};
+    
+    for my $item (@{$char->{inventory}->getItems()}) {
+        next unless $item;
+        if ($item->{nameID} == $item_id) {
+            return $item;
+        }
+    }
+    
+    return 0;
+}
+
+# Use item if it exists in inventory
+sub useItemIfExists {
+    my $item_id = shift;
+    
+    my $item = hasItem($item_id);
+    if ($item) {
+        message "[" . $plugin_name . "] Found $item->{name} (ID: $item_id) - using it!\n", "success";
+        $messageSender->sendItemUse($item->{ID}, $char->{ID});
+        return 1;
+    } else {
+        message "[" . $plugin_name . "] Caixa de Jornada (ID: $item_id) not found in inventory\n", "warning";
+        return 0;
+    }
+}
+
 # Initialize plugin
 message "[" . $plugin_name . "] Plugin v" . $plugin_version . " loaded successfully!\n", "success";
-message "[" . $plugin_name . "] Will send random letters to chat every 10 seconds when in game.\n", "success";
 
 1; # Return true for successful loading 

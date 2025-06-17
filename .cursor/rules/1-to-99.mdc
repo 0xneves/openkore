@@ -66,7 +66,6 @@ openkore/
 # Monitor game events
 my $hooks = Plugins::addHooks(
     ['target_died', \&onKill],           # Monster killed
-    ['base_level', \&onLevelUp],         # Level gained  
     ['self_died', \&onDeath],            # Character died
     ['item_appeared', \&onItemDrop],     # Items on ground
     ['packet_privMsg', \&onPrivateMsg],  # Chat messages

@@ -38,7 +38,6 @@ my $hooks = Plugins::addHooks(
     ['packet/map_loaded', \&onMapLoaded],       # When map is fully loaded
     ['packet/hp_sp_changed', \&onHPChanged],    # When HP/SP changes (damage taken)
     ['mainLoop_pre', \&onMainLoop],             # Main loop
-    ['base_level', \&onLevelUp],                # When character levels up
     ['quest_delete', \&onQuestDeleted],         # When a quest is completed/deleted
 );
 
@@ -58,7 +57,6 @@ sub onReload {
         ['packet/map_loaded', \&onMapLoaded],       # When map is fully loaded
         ['packet/hp_sp_changed', \&onHPChanged],    # When HP/SP changes (damage taken)
         ['mainLoop_pre', \&onMainLoop],             # Main loop
-        ['base_level', \&onLevelUp],                # When character levels up
         ['quest_delete', \&onQuestDeleted],         # When a quest is completed/deleted
     );
     
@@ -82,16 +80,6 @@ sub onHPChanged {
     Heimdall::CombatManager::checkHP();
 }
 
-# Called when character levels up
-sub onLevelUp {
-    my $args = shift;
-    
-    message "[" . $plugin_name . "] Level up detected! Distributing stat points...\n", "success";
-    
-    # Call the LevelingManager to handle stat distribution
-    Heimdall::LevelingManager::onLevelUp();
-}
-
 # Called when a quest is deleted/completed
 sub onQuestDeleted {
     my $args = shift;
@@ -105,13 +93,13 @@ sub onMainLoop {
     return unless $net && $net->getState() == Network::IN_GAME;
     return unless timeOut($timeout, 3); # Check every 3 seconds
     
+    # Safety checks for stats and skills
+    Heimdall::LevelingManager::checkStatsAndSkills();
+
     # Core automation logic
     Heimdall::TutorialManager::tutorialShip();
     Heimdall::TutorialManager::tutorialIsland();
     Heimdall::TutorialManager::tutorialFirstJob();
-    
-    # Safety checks for stats and skills
-    Heimdall::LevelingManager::checkStatsAndSkills();
 
     $timeout = time;
 }

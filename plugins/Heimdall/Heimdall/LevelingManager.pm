@@ -79,28 +79,6 @@ my %job_id_map = (
 # Reverse job ID mapping - maps job IDs to job names
 my %job_name_map = reverse %job_id_map;
 
-# Handle level up event and distribute stat points (immediate response)
-sub onLevelUp {
-    return unless $char;
-    return unless $char->{points_free} && $char->{points_free} > 0;
-    
-    message "[" . $plugin_name . "] Level up detected! Free points: $char->{points_free}\n", "success";
-    
-    # Get job class from config
-    my $job_class = Heimdall::ConfigManager::getConfig('job_class');
-    $job_class = lc($job_class); # Normalize to lowercase
-    
-    message "[" . $plugin_name . "] Current job class: $job_class\n", "info";
-    
-    # Distribute stats based on job class
-    if ($job_class eq 'stalker') {
-        distributeStalkerStats();
-    } else {
-        message "[" . $plugin_name . "] Unknown job class '$job_class', defaulting to stalker build\n", "warning";
-        distributeStalkerStats(); # Default to stalker instead of undefined function
-    }
-}
-
 # Main loop safety check - handles missed points and skill allocation
 sub checkStatsAndSkills {
     return unless $char;

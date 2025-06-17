@@ -1,0 +1,167 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# OpenKore Auto-Leveling Plugin Project
+
+## Project Overview
+Building a comprehensive auto-leveling plugin for OpenKore that provides full automation for Stalker class from character creation to level 99, handles rebirth, and continues the cycle. This replaces all standard OpenKore automation with custom, intelligent systems.
+
+## Target Environment
+- **Game**: Ragnarok Online
+- **Server**: RO Latam (specific server mechanics)
+- **Class**: Stalker (Rogue → Stalker progression)
+- **Goal**: Complete 1-99 → rebirth → 1-99 automation cycle
+- **Platform**: OpenKore bot framework
+
+## Technical Architecture
+
+### Core Components
+1. **State Management System**: Tracks current level, goals, map, and progression state
+2. **Level Progression Engine**: Database-driven leveling zones and monster selection
+3. **Combat Intelligence**: Stalker-specific skill rotations and safety systems
+4. **Resource Management**: Inventory, storage, equipment, and economic decisions
+5. **Safety & Detection Systems**: GM avoidance, player interaction handling
+6. **Development Tools**: Real-time debugging and data collection utilities
+
+### File Structure
+```
+openkore/
+├── plugins/
+│   ├── Heimdall/
+│   │   ├── Heimdall.pl           # Main plugin
+│   │   ├── StateManager.pm          # State tracking
+│   │   ├── LevelingDatabase.pm      # Zone/monster data
+│   │   ├── CombatManager.pm         # Fighting logic
+│   │   ├── ResourceManager.pm       # Items/storage
+│   │   └── SafetyManager.pm         # Security systems
+│   └── devTools/
+│       └── devTools.pl              # Development utilities
+├── control/config.txt               # All standard automation disabled
+└── TODO.md                          # Project roadmap
+```
+
+## Development Philosophy
+
+### Dual-Purpose Design
+- Every function should be accessible both as console commands and internal function calls
+- Example: `usePotion(id)` function callable as both `devtools potion <id>` command and internal `usePotion(2351)`
+- Enables rapid prototyping and live debugging during development
+
+### Data-Driven Approach
+- Level progression based on database of zones/monsters/requirements
+- Equipment and skill builds defined in configuration data
+- Enables easy modification without code changes
+
+### Modular Architecture
+- Each system (combat, resources, safety) is independent
+- Plugin designed to support multiple classes (currently Stalker only)
+- State management allows for graceful restarts and error recovery
+
+## OpenKore Integration Patterns
+
+### Hook Usage
+```perl
+# Monitor game events
+my $hooks = Plugins::addHooks(
+    ['target_died', \&onKill],           # Monster killed
+    ['base_level', \&onLevelUp],         # Level gained  
+    ['self_died', \&onDeath],            # Character died
+    ['item_appeared', \&onItemDrop],     # Items on ground
+    ['packet_privMsg', \&onPrivateMsg],  # Chat messages
+);
+```
+
+### Data Access
+```perl
+# Access OpenKore's internal data
+use Globals qw($char $monstersList $npcsList $itemsList);
+
+# Get current character info
+my $level = $char->{lv};
+my $hp_percent = ($char->{hp} / $char->{hp_max}) * 100;
+
+# Get nearby monsters
+for my $monster (@$monstersList) {
+    my $distance = distance($char->{pos_to}, $monster->{pos_to});
+    # Process monster data...
+}
+```
+
+### Command Integration
+```perl
+# Register plugin commands
+my $commands = Commands::register(
+    ['Heimdall', "Auto-leveling commands", \&onCommand]
+);
+
+# Enable dual access pattern
+sub usePotion {
+    my $potionId = shift;
+    # Implementation here...
+    return "Potion used: $potionName, duration: ${duration}s";
+}
+```
+
+## Coding Standards
+
+### Naming Conventions
+- **Plugins**: camelCase (Heimdall, devTools)
+- **Functions**: camelCase with descriptive names (calculateBestTarget, manageInventory)
+- **Variables**: snake_case for data, camelCase for objects
+- **Constants**: UPPER_CASE (MAX_LEVEL, STALKER_CLASS_ID)
+
+### Error Handling
+- Always check for required conditions (logged in, AI state, etc.)
+- Implement failsafes for stuck conditions
+- Log all significant events and decisions
+- Graceful degradation when systems fail
+
+### Performance Considerations
+- Use timeouts to prevent excessive processing
+- Cache expensive calculations
+- Implement efficient monster/target selection algorithms
+- Monitor memory usage for long-running sessions
+
+## Key Development Tools
+
+### Live Debugging Commands
+```
+devtools monsters        # List all monsters with stats
+devtools route <target>  # Calculate path to target
+devtools combat          # Show combat statistics
+devtools inventory       # Analyze inventory state
+devtools performance     # Show efficiency metrics
+```
+
+### Data Collection
+- Real-time EXP rates and efficiency tracking (XP and % per hour)
+- Safety system trigger logging
+
+## Security & Safety
+
+### Detection Avoidance
+- Randomized timing patterns
+- Human-like behavior simulation
+- GM chat monitoring and response
+- Player interaction protocols
+
+### Error Recovery
+- Stuck detection and resolution
+- Death recovery procedures
+- Network disconnection handling
+- Configuration validation
+
+## Configuration Philosophy
+- Disable ALL standard OpenKore automation systems
+- Single source of truth for all bot behavior
+- Easily configurable without code modification
+- Comprehensive logging for debugging and optimization
+
+## Testing Strategy
+- Live testing with real character progression
+- Incremental feature validation
+- Performance benchmarking at each level range
+
+- Safety system verification under various conditions 

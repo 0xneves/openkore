@@ -123,26 +123,8 @@ sub tutorialIsland {
     my $tutorial_map = "int_land";
     return unless $current_map eq $tutorial_map; # Exit if not in tutorial island map
     
-    # Check if character has Blessing buff
-    message "[" . $plugin_name . "] === BLESSING STATUS DEBUG ===\n", "warning";
-    
-    # Debug: Show all active statuses
-    if ($char->{statuses}) {
-        message "[" . $plugin_name . "] Active statuses: " . join(", ", keys %{$char->{statuses}}) . "\n", "warning";
-    } else {
-        message "[" . $plugin_name . "] No statuses found on character\n", "warning";
-    }
-    
-    # Test different blessing variations
-    my $has_blessing = $char->statusActive('Blessing');
-    my $has_blessing_lower = $char->statusActive('blessing');
-    my $has_blessing_upper = $char->statusActive('BLESSING');
-    
-    message "[" . $plugin_name . "] statusActive('Blessing'): " . ($has_blessing ? "TRUE" : "FALSE") . "\n", "warning";
-    message "[" . $plugin_name . "] statusActive('blessing'): " . ($has_blessing_lower ? "TRUE" : "FALSE") . "\n", "warning";
-    message "[" . $plugin_name . "] statusActive('BLESSING'): " . ($has_blessing_upper ? "TRUE" : "FALSE") . "\n", "warning";
-    
-    if (!$has_blessing) {
+    # Check if character has Blessing buff (EFST_BLESSING)
+    if (!$char->statusActive('EFST_BLESSING')) {
         message "[" . $plugin_name . "] Character does not have Blessing buff\n", "warning";
         captainDialogue();
         return;

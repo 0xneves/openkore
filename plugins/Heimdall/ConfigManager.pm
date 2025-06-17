@@ -2,6 +2,7 @@ package Heimdall::ConfigManager;
 
 use strict;
 use warnings;
+use lib $Plugins::current_plugin_folder;
 
 # Configuration variables
 our $hp_threshold = 70;

@@ -2,6 +2,7 @@ package Heimdall::CombatManager;
 
 use strict;
 use warnings;
+use lib $Plugins::current_plugin_folder;
 use Globals qw($char);
 use Log qw(message);
 use Heimdall::ResourceManager;

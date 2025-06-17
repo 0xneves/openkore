@@ -15,8 +15,10 @@ use AI qw(ai_route);
 use Utils qw(timeOut);
 
 # Import Heimdall modules
+use lib $Plugins::current_plugin_folder;
 use Heimdall::ResourceManager;
 use Heimdall::CombatManager;
+use Heimdall::ConfigManager;
 
 # Plugin information
 my $plugin_name = 'Heimdall';
@@ -102,6 +104,9 @@ sub tutorial {
         ai_route("iz_int", 56, 15);
     }
 }
+
+# Load configuration on startup
+Heimdall::ConfigManager::loadConfig();
 
 # Initialize plugin
 message "[" . $plugin_name . "] Plugin v" . $plugin_version . " loaded successfully!\n", "success";

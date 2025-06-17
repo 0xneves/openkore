@@ -92,10 +92,12 @@ sub moveRandomly {
     
     message "[" . $plugin_name . "] Moving randomly to ($randX, $randY)\n", "info";
     
-    # Use ai_route with portal avoidance flags
+    # Use ai_route with comprehensive portal avoidance flags
     main::ai_route($field->baseName, $randX, $randY, 
         isRandomWalk => 1,
-        noMapRoute => 1);
+        noMapRoute => 1,
+        avoidWalls => 1,
+        noSitAuto => 1);
 }
 
 1; 

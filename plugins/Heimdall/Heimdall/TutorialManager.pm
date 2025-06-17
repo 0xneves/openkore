@@ -54,7 +54,7 @@ sub tutorialIsland {
     return unless $current_map eq $tutorial_map; # Exit if not in tutorial island map
     
     # Check if we've already completed the island captain quest
-    my $captain_completed = Heimdall::ConfigManager::getConfigValue('tutorial_island_captain') || 0;
+    my $captain_completed = Heimdall::ConfigManager::getConfig('tutorial_island_captain') || 0;
     
     if ($captain_completed) {
         Heimdall::QuestManager::teleportToIzlude();

@@ -39,10 +39,15 @@ sub huntMonsters {
         my $closest_monster;
         my $closest_distance = 999;
         
-        for my $monster (@monsters) {
+        for my $monster_ref (@monsters) {
             # Debug what we got
-            message "[" . $plugin_name . "] Monster item: " . (defined $monster ? ref($monster) : "undefined") . "\n", "debug";
+            message "[" . $plugin_name . "] Monster item: " . (defined $monster_ref ? ref($monster_ref) : "undefined") . "\n", "debug";
             
+            next unless $monster_ref;
+            next unless ref($monster_ref) eq 'ARRAY';
+            
+            # Get the actual monster object from the array
+            my $monster = $monster_ref->[0];
             next unless $monster;
             next unless ref($monster) eq 'HASH';
             

@@ -81,9 +81,20 @@ sub tutorial {
 # Check if item exists in inventory by ID
 sub hasItem {
     my $item_id = shift;
-    return 0 unless $char && $char->{inventory};
     
     message "[" . $plugin_name . "] DEBUG: Searching for item ID $item_id\n", "info";
+    
+    unless ($char) {
+        message "[" . $plugin_name . "] DEBUG: \$char is not defined!\n", "error";
+        return 0;
+    }
+    
+    unless ($char->{inventory}) {
+        message "[" . $plugin_name . "] DEBUG: \$char->{inventory} is not defined!\n", "error";
+        return 0;
+    }
+    
+    message "[" . $plugin_name . "] DEBUG: Both \$char and inventory exist, proceeding...\n", "success";
     
     for my $item (@{$char->{inventory}->getItems()}) {
         next unless $item;

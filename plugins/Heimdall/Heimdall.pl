@@ -74,9 +74,7 @@ sub onMainLoop {
     return unless timeOut($timeout, 10); # Check every 10 seconds
     
     # Core automation logic (no HP checking here anymore)
-    message "[" . $plugin_name . "] Entering tutorialShip\n", "success";
     tutorialShip();
-    message "[" . $plugin_name . "] Entering tutorialIsland\n", "success";
     tutorialIsland();
 
     $timeout = time;
@@ -129,8 +127,6 @@ sub tutorialIsland {
         captainDialogue();
         return;
     }
-    
-    message "[" . $plugin_name . "] Character has Blessing buff - ready for training\n", "success";
 }
 
 # Captain Dialogue function - talks to Captain NPC for blessing

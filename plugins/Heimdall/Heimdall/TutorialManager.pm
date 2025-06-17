@@ -35,11 +35,11 @@ sub tutorialShip {
     # Conditional movement based on X coordinate
     if ($char_x < 28) {
         # If X is less than 28, move to portal at (27, 30)
-        message "[" . $plugin_name . "] X=$char_x < 28, moving to portal (27,30)\n", "success";
+        return if Heimdall::CombatManager::isAIBusy();
         ai_route($field->baseName, 27, 30);
     } elsif ($char_x > 28) {
         # If X is greater than 28, move to int_land (56, 15)
-        message "[" . $plugin_name . "] X=$char_x > 28, moving to iz_int (56,15)\n", "success";
+        return if Heimdall::CombatManager::isAIBusy();
         ai_route("iz_int", 56, 15);
     }
 }
@@ -104,6 +104,7 @@ sub sailorDialogue {
     message "[" . $plugin_name . "] Attempting to talk to Sailor at ($sailor_x, $sailor_y)\n", "info";
     
     # Talk to NPC and send 3 continue responses
+    return if Heimdall::CombatManager::isAIBusy();
     main::ai_route($field->baseName, $sailor_x, $sailor_y);
     main::ai_talkNPC($sailor_x, $sailor_y, "n n n n");
 }
@@ -126,7 +127,7 @@ sub captainDialogue {
     
     if ($distance > 2) {
         # Move to Captain's location
-        message "[" . $plugin_name . "] Moving to Captain at ($captain_x, $captain_y)\n", "info";
+        return if Heimdall::CombatManager::isAIBusy();
         AI::clear("move");
         ai_route($field->baseName, $captain_x, $captain_y);
         return;
@@ -172,36 +173,29 @@ sub captainDialogue {
 sub tutorialFirstJob {
     return unless $char;
     return unless $field; # Safety check - field must be loaded
-    
-    message "[" . $plugin_name . "] Checking first job requirements\n", "info";
 
     # Check if current job is Novice (job ID 0)
     if ($char->{jobID} != 0) {
-        message "[" . $plugin_name . "] Current job is not Novice (jobID: $char->{jobID}) - skipping Tutorial\n", "info";
         return;
     }
     
     # Check if we have skill points to allocate
     if ($char->{points_skill} && $char->{points_skill} > 0) {
-        message "[" . $plugin_name . "] Found $char->{points_skill} skill points - allocating to Basic Skill\n", "success";
         allocateBasicSkill();
     }
     
     # Check if job level is less than 10
-    if ($char->{lv_job} && $char->{lv_job} < 10) {
-        message "[" . $plugin_name . "] Job level is $char->{lv_job}/10 - need to level up\n", "info";
-        
+    if ($char->{lv_job} && $char->{lv_job} < 10) {        
         # Check if we're already in the training map
         my $current_map = $field->baseName;
         my $training_map = "prt_fild08";
         
         if ($current_map eq $training_map) {
             # We're in the training map, start hunting
-            message "[" . $plugin_name . "] Already in $training_map - starting monster hunting\n", "success";
             Heimdall::CombatManager::huntMonsters();
         } else {
             # Move to training map
-            message "[" . $plugin_name . "] Moving to training map: $training_map\n", "info";
+            return if Heimdall::CombatManager::isAIBusy();
             main::ai_route($training_map, undef, undef);
         }
     } else {
@@ -250,9 +244,7 @@ sub changeToFirstJob {
         message "[" . $plugin_name . "] No dialogue option found for job: $next_job\n", "error";
         return;
     }
-    
-    message "[" . $plugin_name . "] Target class: $target_class, Next job: $next_job, Option: r$job_option\n", "info";
-    
+
     # Valquiria NPC coordinates in Izlude
     my $npc_x = 122;
     my $npc_y = 149;
@@ -263,7 +255,7 @@ sub changeToFirstJob {
     
     if ($current_map ne $izlude_map) {
         # Move to Izlude
-        message "[" . $plugin_name . "] Moving to Izlude for job change\n", "info";
+        return if Heimdall::CombatManager::isAIBusy();
         main::ai_route($izlude_map, undef, undef);
         return;
     }
@@ -275,19 +267,15 @@ sub changeToFirstJob {
     
     if ($distance > 2) {
         # Move closer to Valquiria NPC
-        message "[" . $plugin_name . "] Moving to Valquiria NPC at ($npc_x, $npc_y)\n", "info";
+        return if Heimdall::CombatManager::isAIBusy();
         main::ai_route($izlude_map, $npc_x, $npc_y);
         return;
     }
     
     # Close any existing NPC dialogue first
     if (Heimdall::QuestManager::closeNPCDialogue()) {
-        message "[" . $plugin_name . "] Closed existing dialogue, will retry Valquiria in next cycle\n", "info";
         return;
     }
-    
-    # We're close enough, start job change dialogue
-    message "[" . $plugin_name . "] Starting job change dialogue with Valquiria\n", "success";
     
     # Dynamic job change dialogue sequence: c r1 c r0 c c r{job_option} c
     # Job options for reference:

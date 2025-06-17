@@ -13,6 +13,12 @@ use Heimdall::ConfigManager;
 # Plugin name for consistent logging
 my $plugin_name = 'Heimdall::CombatManager';
 
+# Check if AI is busy (routing, moving, or attacking)
+# Returns 1 if busy, 0 if idle
+sub isAIBusy {
+    return AI::is("route") || AI::is("move") || AI::is("attack");
+}
+
 # Check HP and use potions if needed
 sub checkHP {
     return unless $char;

@@ -2,7 +2,6 @@ package Heimdall::ResourceManager;
 
 use strict;
 use warnings;
-use lib $Plugins::current_plugin_folder;
 use Globals qw($char $messageSender);
 use Log qw(message);
 

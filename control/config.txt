@@ -2,8 +2,7 @@
 # The Manual is located at https://openkore.com/wiki/Manual
 
 ######## Plugin Configuration ########
-# Load Heimdall plugin automatically
-loadPlugins Heimdall
+# Heimdall plugin is loaded via sys.txt loadPlugins_list
 
 ######## Login options and server-specific options ########
 

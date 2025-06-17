@@ -6,6 +6,7 @@ use Globals qw($char $monstersList $field @monstersID);
 use Log qw(message);
 use Utils qw(distance);
 use AI;
+use Misc qw(positionNearPortal);
 use Heimdall::ResourceManager;
 use Heimdall::ConfigManager;
 
@@ -79,18 +80,24 @@ sub moveRandomly {
     # Clear AI to ensure we can move
     AI::clear();
     
-    # Use OpenKore's built-in random walk pattern with infinite attempts
+    # Use OpenKore's built-in random walk pattern with portal avoidance
     my ($randX, $randY);
     
     while (1) {
         $randX = int(rand($field->width()));
         $randY = int(rand($field->height()));
         
-        # Check if position is walkable (this includes portal avoidance)
-        last if $field->isWalkable($randX, $randY);
+        # Check if position is walkable
+        next unless $field->isWalkable($randX, $randY);
+        
+        # Check if position is too close to a portal (avoid within 5 blocks)
+        next if positionNearPortal({x => $randX, y => $randY}, 5);
+        
+        # Position is good - walkable and away from portals
+        last;
     }
     
-    message "[" . $plugin_name . "] Moving randomly to ($randX, $randY)\n", "info";
+    message "[" . $plugin_name . "] Moving randomly to ($randX, $randY) - portal-safe location\n", "info";
     
     # Use ai_route with comprehensive portal avoidance flags
     main::ai_route($field->baseName, $randX, $randY, 

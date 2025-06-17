@@ -175,23 +175,32 @@ sub isMonsterReachable {
     my $monster = shift;
     return 0 unless $monster && $char && $field;
     
-    # Try to calculate path to monster
-    my $pathfinding = new PathFinding(
+    # Create PathFinding object and reset with parameters
+    my $pathfinding = new PathFinding();
+    my $result = $pathfinding->reset(
         start => $char->{pos_to},
         dest => $monster->{pos_to},
-        field => $field
+        field => $field,
+        avoidWalls => 1
     );
     
-    my $path = $pathfinding->run();
+    return 0 unless $result; # reset failed
     
-    # If no path found, monster is unreachable
-    return 0 unless $path && @$path > 0;
+    # Try to calculate path to monster
+    my @solution = ();
+    my $path_result = $pathfinding->run(\@solution);
+    
+    # Check pathfinding result
+    # -1 = no path found, -2 = not reset, -3 = not complete, positive = success
+    if ($path_result < 0) {
+        return 0; # No path found or error
+    }
     
     # If path is too long compared to straight-line distance, probably unreachable terrain
     my $straight_distance = distance($char->{pos_to}, $monster->{pos_to});
-    my $path_distance = @$path;
+    my $path_distance = scalar(@solution);
     
-    # If walking path is more than 3x the straight distance, consider unreachable
+    # If walking path is more than 2x the straight distance, consider unreachable
     if ($path_distance > ($straight_distance * 2)) {
         return 0;
     }

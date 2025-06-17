@@ -2,7 +2,7 @@ package Heimdall::CombatManager;
 
 use strict;
 use warnings;
-use Globals qw($char $monstersList $field);
+use Globals qw($char $monstersList $field @monstersID);
 use Log qw(message);
 use Utils qw(distance);
 use AI;
@@ -29,97 +29,40 @@ sub huntMonsters {
     return unless $char;
     return unless $field;
     
-    # Get all monsters in the area
-    my @monsters = $monstersList->getItems();
+    # Check if there are any monsters using OpenKore's monstersID array (like ml command)
+    my $monster_count = 0;
+    for my $i (0..$#monstersID) {
+        next unless $monstersID[$i];
+        $monster_count++;
+    }
     
-    message "[" . $plugin_name . "] Found " . scalar(@monsters) . " monsters in area\n", "debug";
+    message "[" . $plugin_name . "] Found $monster_count monsters in area\n", "debug";
     
-    if (@monsters) {
-        # Find the closest monster
-        my $closest_monster;
+    if ($monster_count > 0) {
+        # Find the closest monster using OpenKore's standard approach
+        my $closest_index = -1;
         my $closest_distance = 999;
         
-        for my $monster_ref (@monsters) {
-            # Debug what we got
-            message "[" . $plugin_name . "] Monster item: " . (defined $monster_ref ? ref($monster_ref) : "undefined") . "\n", "debug";
+        for my $i (0..$#monstersID) {
+            next unless $monstersID[$i];
             
-            if (!$monster_ref) {
-                message "[" . $plugin_name . "] Monster ref is undefined, skipping\n", "debug";
-                next;
+            my $monster = $monstersList->getByID($monstersID[$i]);
+            next unless $monster;
+            next if $monster->{dead};
+            
+            my $distance = distance($char->{pos_to}, $monster->{pos_to});
+            if ($distance < $closest_distance) {
+                $closest_distance = $distance;
+                $closest_index = $i;
             }
-            
-            if (ref($monster_ref) ne 'ARRAY') {
-                message "[" . $plugin_name . "] Monster ref is not ARRAY, it's: " . ref($monster_ref) . ", skipping\n", "debug";
-                next;
-            }
-            
-            message "[" . $plugin_name . "] Processing ARRAY monster ref\n", "debug";
-            
-            # Debug array contents
-            message "[" . $plugin_name . "] Array size: " . scalar(@$monster_ref) . "\n", "debug";
-            for my $i (0 .. $#$monster_ref) {
-                my $item = $monster_ref->[$i];
-                message "[" . $plugin_name . "] Array[$i]: " . (defined $item ? ref($item) || "SCALAR" : "undefined") . "\n", "debug";
-            }
-            
-            # Get the actual monster object from the array
-            my $monster = $monster_ref->[0];
-            if (!$monster) {
-                message "[" . $plugin_name . "] Monster object is undefined, skipping\n", "debug";
-                next;
-            }
-            
-            message "[" . $plugin_name . "] Monster object type: " . ref($monster) . "\n", "debug";
-            
-            # Handle Actor::Monster objects
-            my $monster_type = ref($monster);
-            message "[" . $plugin_name . "] Processing monster of type: $monster_type\n", "debug";
-            
-            if ($monster_type eq 'Actor::Monster') {
-                # Handle Actor::Monster object
-                message "[" . $plugin_name . "] Handling Actor::Monster object\n", "debug";
-                
-                my $monster_name = $monster->{name} || "unknown";
-                my $monster_dead = $monster->{dead} || 0;
-                
-                message "[" . $plugin_name . "] Monster: $monster_name dead=$monster_dead\n", "debug";
-                
-                next if $monster_dead;
-                next unless $monster->{pos_to};
-                
-                my $distance = distance($char->{pos_to}, $monster->{pos_to});
-                if ($distance < $closest_distance) {
-                    $closest_distance = $distance;
-                    $closest_monster = $monster;
-                }
-                
-            } elsif ($monster_type eq 'HASH') {
-                # Handle hash reference (legacy)
-                message "[" . $plugin_name . "] Handling HASH reference\n", "debug";
-                
-                my $monster_name = $monster->{name} || "unknown";
-                my $monster_dead = $monster->{dead} || 0;
-                
-                message "[" . $plugin_name . "] Monster: $monster_name dead=$monster_dead\n", "debug";
-                
-                next if $monster_dead;
-                next unless $monster->{pos_to};
-                
-                my $distance = distance($char->{pos_to}, $monster->{pos_to});
-                if ($distance < $closest_distance) {
-                    $closest_distance = $distance;
-                    $closest_monster = $monster;
-                }
-                
-                         } else {
-                 message "[" . $plugin_name . "] Unknown monster type: $monster_type, skipping\n", "debug";
-                 next;
-             }
         }
         
-        if ($closest_monster) {
-            message "[" . $plugin_name . "] Attacking monster: $closest_monster->{name} at distance $closest_distance\n", "info";
-            main::attack($closest_monster->{ID});
+        if ($closest_index >= 0) {
+            my $monster = $monstersList->getByID($monstersID[$closest_index]);
+            message "[" . $plugin_name . "] Attacking monster: " . $monster->name . " (index $closest_index) at distance $closest_distance\n", "info";
+            
+            # Attack using the monster ID (same as "a <index>" command)
+            main::attack($monstersID[$closest_index]);
         }
     } else {
         # No monsters found, move randomly
@@ -151,8 +94,8 @@ sub moveRandomly {
     
     # Use ai_route with portal avoidance flags
     main::ai_route($field->baseName, $randX, $randY, 
-                   isRandomWalk => 1,
-                   noMapRoute => 1);
+        isRandomWalk => 1,
+        noMapRoute => 1);
 }
 
 1; 

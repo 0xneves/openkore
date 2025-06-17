@@ -16,6 +16,7 @@ use Commands;
 
 # Import Heimdall modules
 use lib $Plugins::current_plugin_folder;
+use Heimdall::StateManager;
 use Heimdall::ResourceManager;
 use Heimdall::CombatManager;
 use Heimdall::ConfigManager;
@@ -182,13 +183,18 @@ sub onMainLoop {
     return unless $net && $net->getState() == Network::IN_GAME;
     return unless timeOut($timeout, 3); # Check every 3 seconds
     
+    # Manage character state (death/respawn)
+    Heimdall::StateManager::manageCharacterState();
+    
     # Safety checks for stats and skills
     Heimdall::LevelingManager::checkStatsAndSkills();
 
-    # Core automation logic
-    Heimdall::TutorialManager::tutorialShip();
-    Heimdall::TutorialManager::tutorialIsland();
-    Heimdall::TutorialManager::tutorialFirstJob();
+    # Core automation logic - tutorials only for low level characters
+    if ($char && $char->{lv} && $char->{lv} < 15) {
+        Heimdall::TutorialManager::tutorialShip();
+        Heimdall::TutorialManager::tutorialIsland();
+        Heimdall::TutorialManager::tutorialFirstJob();
+    }
 
     $timeout = time;
 }

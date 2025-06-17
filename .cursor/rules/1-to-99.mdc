@@ -29,16 +29,19 @@ Building a comprehensive auto-leveling plugin for OpenKore that provides full au
 ```
 openkore/
 ├── plugins/
-│   ├── Heimdall/
-│   │   ├── Heimdall.pl           # Main plugin
+│   ├── Heimdall/ 
+│   │   ├── Heimdall.pl              # Main plugin
 │   │   ├── StateManager.pm          # State tracking
-│   │   ├── LevelingDatabase.pm      # Zone/monster data
+│   │   ├── LevelingManager.pm       # Char Stats/Skills/Job
 │   │   ├── CombatManager.pm         # Fighting logic
+│   │   ├── ConfigManager.pm         # Environment variables
+│   │   ├── QuestManager.pm          # Sorting and Solving quests
 │   │   ├── ResourceManager.pm       # Items/storage
-│   │   └── SafetyManager.pm         # Security systems
+│   │   └── TutorialManager.pm       # Beats the initial game tutorial
 │   └── devTools/
 │       └── devTools.pl              # Development utilities
 ├── control/config.txt               # All standard automation disabled
+├── control/heimdall.txt             # Heimdall configuration file
 └── TODO.md                          # Project roadmap
 ```
 

@@ -61,8 +61,27 @@ sub tutorialIsland {
     
     message "[" . $plugin_name . "] Character has Blessing buff - ready for training\n", "success";
     
-    # Start hunting monsters
-    Heimdall::CombatManager::huntMonsters();
+    # Check if we have enough items (ID 6008) to complete the quest
+    if (Heimdall::ResourceManager::hasItem(6008) && Heimdall::ResourceManager::getItemAmount(6008) >= 3) {
+        # We have enough items, talk to the Sailor
+        sailorDialogue();
+    } else {
+        # We need more items, start hunting monsters
+        Heimdall::CombatManager::huntMonsters();
+    }
+}
+
+# Talk to Sailor NPC at coordinates (58, 69) with 3 next hits
+sub sailorDialogue {
+    return unless $char;
+    
+    my $sailor_x = 58;
+    my $sailor_y = 69;
+    
+    message "[" . $plugin_name . "] Attempting to talk to Sailor at ($sailor_x, $sailor_y)\n", "info";
+    
+    # Talk to NPC and send 3 continue responses
+    main::ai_talkNPC($sailor_x, $sailor_y, "n n n n");
 }
 
 # Captain Dialogue function - talks to Captain NPC for blessing
@@ -108,11 +127,11 @@ sub captainDialogue {
     if ($quest_accepted) {
         # Quest already accepted - second dialogue (4 continues only)
         message "[" . $plugin_name . "] Starting second dialogue with Captain (4 continues)\n", "info";
-        main::ai_talkNPC($captain_x, $captain_y, "c c c c");
+        main::ai_talkNPC($captain_x, $captain_y, "n n n n");
     } else {
         # First time - accept quest (response 0 + 7 continues)
         message "[" . $plugin_name . "] Starting first dialogue with Captain (accept + 7 continues)\n", "info";
-        main::ai_talkNPC($captain_x, $captain_y, "r0 c c c c c c c");
+        main::ai_talkNPC($captain_x, $captain_y, "n n n n n n n n");
         
         # Set config flag as backup for future reference
         Heimdall::ConfigManager::setConfig('captain_quest_accepted', 1);

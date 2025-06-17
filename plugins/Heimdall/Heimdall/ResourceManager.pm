@@ -56,6 +56,19 @@ sub hasItem {
     return 0;
 }
 
+# Get the amount of a specific item in inventory
+sub getItemAmount {
+    my $item_id = shift;
+    return 0 unless $char && $item_id;
+    
+    for my $item (@{$char->inventory}) {
+        next unless $item;
+        return $item->{amount} if $item->{nameID} == $item_id;
+    }
+    
+    return 0;
+}
+
 # Use an item if it exists in inventory
 sub useItemIfExists {
     my $item_id = shift;

@@ -43,8 +43,17 @@ sub huntMonsters {
             # Debug what we got
             message "[" . $plugin_name . "] Monster item: " . (defined $monster_ref ? ref($monster_ref) : "undefined") . "\n", "debug";
             
-            next unless $monster_ref;
-            next unless ref($monster_ref) eq 'ARRAY';
+            if (!$monster_ref) {
+                message "[" . $plugin_name . "] Monster ref is undefined, skipping\n", "debug";
+                next;
+            }
+            
+            if (ref($monster_ref) ne 'ARRAY') {
+                message "[" . $plugin_name . "] Monster ref is not ARRAY, it's: " . ref($monster_ref) . ", skipping\n", "debug";
+                next;
+            }
+            
+            message "[" . $plugin_name . "] Processing ARRAY monster ref\n", "debug";
             
             # Debug array contents
             message "[" . $plugin_name . "] Array size: " . scalar(@$monster_ref) . "\n", "debug";
@@ -55,10 +64,17 @@ sub huntMonsters {
             
             # Get the actual monster object from the array
             my $monster = $monster_ref->[0];
-            next unless $monster;
+            if (!$monster) {
+                message "[" . $plugin_name . "] Monster object is undefined, skipping\n", "debug";
+                next;
+            }
             
             message "[" . $plugin_name . "] Monster object type: " . ref($monster) . "\n", "debug";
-            next unless ref($monster) eq 'HASH';
+            
+            if (ref($monster) ne 'HASH') {
+                message "[" . $plugin_name . "] Monster object is not HASH, it's: " . ref($monster) . ", skipping\n", "debug";
+                next;
+            }
             
             # Debug monster properties
             message "[" . $plugin_name . "] Monster: " . ($monster->{name} || "unknown") . " dead=" . ($monster->{dead} || "0") . "\n", "debug";

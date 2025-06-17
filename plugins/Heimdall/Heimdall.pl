@@ -19,6 +19,7 @@ use Heimdall::ResourceManager;
 use Heimdall::CombatManager;
 use Heimdall::ConfigManager;
 use Heimdall::TutorialManager;
+use Heimdall::LevelingManager;
 
 # Plugin information
 my $plugin_name = 'Heimdall';
@@ -36,6 +37,7 @@ my $hooks = Plugins::addHooks(
     ['packet/map_loaded', \&onMapLoaded],       # When map is fully loaded
     ['packet/hp_sp_changed', \&onHPChanged],    # When HP/SP changes (damage taken)
     ['mainLoop_pre', \&onMainLoop],             # Main loop
+    ['base_level', \&onLevelUp],                # When character levels up
 );
 
 # Called when map is fully loaded
@@ -66,6 +68,16 @@ sub onHPChanged {
     
     # Immediately check HP when it changes
     Heimdall::CombatManager::checkHP();
+}
+
+# Called when character levels up
+sub onLevelUp {
+    my $args = shift;
+    
+    message "[" . $plugin_name . "] Level up detected! Distributing stat points...\n", "success";
+    
+    # Call the LevelingManager to handle stat distribution
+    Heimdall::LevelingManager::onLevelUp();
 }
 
 # Main loop - core automation logic

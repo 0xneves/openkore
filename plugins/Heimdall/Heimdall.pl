@@ -114,6 +114,12 @@ sub onCommand {
         message "[" . $plugin_name . "] Manually triggering monster hunting...\n", "info";
         Heimdall::CombatManager::huntMonsters();
         
+    } elsif ($subcmd eq 'ai') {
+        # Show AI busy status
+        my $is_busy = Heimdall::CombatManager::isAIBusy();
+        my $status = $is_busy ? "busy" : "idle";
+        message "[" . $plugin_name . "] AI Status: $status\n", "info";
+        
     } elsif ($subcmd eq 'inventory' || $subcmd eq 'inv') {
         # Show inventory summary
         my $summary = Heimdall::ResourceManager::getInventorySummary();
@@ -153,6 +159,7 @@ sub onCommand {
         message "[" . $plugin_name . "]   hei status               - Show detailed stat distribution status\n", "info";
         message "[" . $plugin_name . "]   hei distribute           - Manually trigger stat distribution\n", "info";
         message "[" . $plugin_name . "]   hei hunt                 - Manually trigger monster hunting\n", "info";
+        message "[" . $plugin_name . "]   hei ai                   - Show AI status (busy/idle)\n", "info";
         message "[" . $plugin_name . "]   hei inventory/inv        - Show inventory summary\n", "info";
         message "[" . $plugin_name . "]   hei avoid/avoidance      - Show monster avoidance status\n", "info";
         message "[" . $plugin_name . "]   hei help                 - Show this help\n", "info";

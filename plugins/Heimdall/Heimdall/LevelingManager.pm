@@ -83,8 +83,8 @@ my %job_name_map = reverse %job_id_map;
 sub checkStatsAndSkills {
     return unless $char;
     
-    # Check for accumulated stat points (7+ points means we missed some allocations)
-    if ($char->{points_free} && $char->{points_free} >= 7) {
+    # Check for accumulated stat points (12+ points means we should allocate)
+    if ($char->{points_free} && $char->{points_free} >= 12) {
         message "[" . $plugin_name . "] Safety check: Found $char->{points_free} unallocated stat points\n", "warning";
         
         # Get job class and distribute stats
@@ -123,28 +123,24 @@ my %stat_builds = (
 sub distributeStatsByBuild {
     my $build_name = shift || 'stalker';
     
-    message "[" . $plugin_name . "] Distributing stats for $build_name build\n", "info";
-    
     my $phases = $stat_builds{$build_name};
     unless ($phases) {
         message "[" . $plugin_name . "] Unknown stat build: $build_name\n", "error";
         return;
     }
     
-    while ($char->{points_free} > 0) {
-        my $current_phase = getCurrentStatPhase($phases);
-        
-        unless ($current_phase) {
-            message "[" . $plugin_name . "] Stat build complete!\n", "success";
-            last;
-        }
-        
-        my $success = allocateStatInPhase($current_phase);
-        
-        unless ($success) {
-            message "[" . $plugin_name . "] Cannot allocate more stat points - insufficient points remaining\n", "warning";
-            last;
-        }
+    # Only allocate ONE stat point per call - let main loop handle the rest
+    my $current_phase = getCurrentStatPhase($phases);
+    
+    unless ($current_phase) {
+        message "[" . $plugin_name . "] Stat build complete!\n", "success";
+        return;
+    }
+    
+    my $success = allocateStatInPhase($current_phase);
+    
+    unless ($success) {
+        message "[" . $plugin_name . "] Cannot allocate stat point - insufficient points remaining\n", "warning";
     }
 }
 
@@ -443,15 +439,10 @@ sub allocateBasicSkill {
     return unless $char->{jobID} == 0; # Only for Novice
     
     my $basic_skill_id = 1; # Basic Skill ID
-    my $available_points = $char->{points_skill};
     
-    message "[" . $plugin_name . "] Allocating $available_points skill points to Basic Skill (ID: $basic_skill_id)\n", "info";
-    
-    # Allocate all available skill points to Basic Skill
-    for my $i (1..$available_points) {
-        $messageSender->sendAddSkillPoint($basic_skill_id);
-        message "[" . $plugin_name . "] Allocated skill point $i/$available_points to Basic Skill\n", "debug";
-    }
+    # Allocate only ONE skill point per call - let main loop handle the rest
+    $messageSender->sendAddSkillPoint($basic_skill_id);
+    message "[" . $plugin_name . "] Allocated 1 skill point to Basic Skill (ID: $basic_skill_id)\n", "info";
 }
 
 1; 

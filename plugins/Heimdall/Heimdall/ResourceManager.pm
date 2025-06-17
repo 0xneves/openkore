@@ -2,7 +2,7 @@ package Heimdall::ResourceManager;
 
 use strict;
 use warnings;
-use Globals qw($char);
+use Globals qw($char $messageSender);
 use Log qw(message);
 use Heimdall::ConfigManager;
 
@@ -46,11 +46,13 @@ sub usePotion {
 # Check if character has a specific item
 sub hasItem {
     my $item_id = shift;
-    return 0 unless $char && $item_id;
+    return 0 unless $char && $char->inventory;
     
-    for my $item (@{$char->inventory}) {
+    for my $item (@{$char->inventory->getItems()}) {
         next unless $item;
-        return 1 if $item->{nameID} == $item_id && $item->{amount} > 0;
+        if ($item->{nameID} == $item_id) {
+            return $item;
+        }
     }
     
     return 0;
@@ -69,21 +71,18 @@ sub getItemAmount {
     return 0;
 }
 
-# Use an item if it exists in inventory
+# Use item if it exists in inventory
 sub useItemIfExists {
     my $item_id = shift;
-    return 0 unless $char && $item_id;
     
-    for my $item (@{$char->inventory}) {
-        next unless $item;
-        if ($item->{nameID} == $item_id && $item->{amount} > 0) {
-            message "[" . $plugin_name . "] Using item: $item->{name} (ID: $item_id)\n", "info";
-            $item->use();
-            return 1;
-        }
+    my $item = hasItem($item_id);
+    if ($item) {
+        message "[" . $plugin_name . "] Found $item->{name} (ID: $item_id) - using it!\n", "success";
+        $messageSender->sendItemUse($item->{ID}, $char->{ID});
+        return 1;
+    } else {
+        return 0;
     }
-    
-    return 0;
 }
 
 # Get inventory summary

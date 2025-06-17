@@ -48,6 +48,10 @@ sub onMapLoaded {
 # Called when plugin is loaded/reloaded
 sub onReload {
     message "[" . $plugin_name . "] Plugin reloading...\n", "success";
+    # Reset timeout and call main loop immediately
+    $timeout = 0;
+    onMainLoop();
+    message "[" . $plugin_name . "] Main loop executed immediately after reload\n", "success";
 }
 
 # Called when plugin is unloaded
@@ -112,18 +116,12 @@ sub tutorialShip {
 sub tutorialIsland {
     return unless $char;
     return unless $field; # Safety check - field must be loaded
-
-    message "[" . $plugin_name . "] Entering tutorialIsland after char and field are loaded\n", "success";
     
     my $current_map = $field->baseName;
     return unless $current_map; # Extra safety - map name must exist
-
-    message "[" . $plugin_name . "] Current map: $current_map\n", "success";
     
     my $tutorial_map = "int_land";
     return unless $current_map eq $tutorial_map; # Exit if not in tutorial island map
-
-    message "[" . $plugin_name . "] tutorial_map: $tutorial_map\n", "success";
     
     # Check if character has Blessing buff
     if (!$char->statusActive('Blessing')) {

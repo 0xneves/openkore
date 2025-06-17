@@ -1,4 +1,9 @@
 # Heimdall Plugin Configuration
+# Ideally you shouldn't touch in this file.
+
+##########################
+#### Health - Potions ####
+##########################
 
 # HP percentage threshold to trigger hp potion usage (0-100)
 hp_threshold 70
@@ -11,3 +16,10 @@ potion_need_purchase 0
 
 # Number of Caixa de Jornada boxes available (starts with 10)
 has_jornada 10
+
+###########################
+#### Tutorial - Izlude ####
+###########################
+
+# Has completed the first quest on Tutorial Island (0 = false, 1 = true)
+tutorial_island_captain 0

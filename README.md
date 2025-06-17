@@ -29,3 +29,22 @@ Leave that terminal open, go to a new one and navigate to openkore root folder a
 ```bash
 $ perl openkore.pl
 ``` 
+
+## Commands
+
+```bash
+# Monster Safety & Combat
+$ hei avoid          # See what monsters are avoided on current map  
+$ hei hunt           # Manual monster hunting (with safety filtering)
+
+# Stats & Progression  
+$ hei stats          # Quick stat summary
+$ hei status         # Detailed stat distribution status
+$ hei distribute     # Manual stat distribution
+
+# Resources
+$ hei inv            # Inventory summary
+
+# Help
+$ hei help           # Show all commands
+```

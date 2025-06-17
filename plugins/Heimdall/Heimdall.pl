@@ -9,7 +9,7 @@ use warnings;
 
 # Import required OpenKore modules
 use Plugins;
-use Globals qw($char %config $net);
+use Globals qw($char %config $net $field);
 use Log qw(message);
 use Utils qw(timeOut);
 use Commands;
@@ -122,18 +122,42 @@ sub onCommand {
             message "[" . $plugin_name . "] Unable to get inventory summary (not logged in?)\n", "warning";
         }
         
+    } elsif ($subcmd eq 'avoid' || $subcmd eq 'avoidance') {
+        # Show monster avoidance status for current map
+        unless ($field) {
+            message "[" . $plugin_name . "] Not on any map - cannot check avoidance list\n", "warning";
+            return;
+        }
+        
+        my $current_map = $field->baseName;
+        my @avoided = Heimdall::CombatManager::getAvoidedMonstersForMap();
+        
+        message "[" . $plugin_name . "] === Monster Avoidance Status ($current_map) ===\n", "info";
+        message "[" . $plugin_name . "] Character Level: " . ($char->{lv} || 'Unknown') . "\n", "info";
+        
+        if (@avoided) {
+            message "[" . $plugin_name . "] Avoided Monsters:\n", "info";
+            for my $monster (@avoided) {
+                message "[" . $plugin_name . "]   - $monster\n", "info";
+            }
+        } else {
+            message "[" . $plugin_name . "] No monsters are being avoided on this map\n", "info";
+        }
+        message "[" . $plugin_name . "] === End Avoidance Status ===\n", "info";
+        
     } elsif ($subcmd eq 'help' || $subcmd eq '') {
         # Show available commands
         message "[" . $plugin_name . "] Available commands:\n", "info";
-        message "[" . $plugin_name . "]   heimdall stats/summary   - Show current stat summary\n", "info";
-        message "[" . $plugin_name . "]   heimdall status          - Show detailed stat distribution status\n", "info";
-        message "[" . $plugin_name . "]   heimdall distribute      - Manually trigger stat distribution\n", "info";
-        message "[" . $plugin_name . "]   heimdall hunt            - Manually trigger monster hunting\n", "info";
-        message "[" . $plugin_name . "]   heimdall inventory/inv   - Show inventory summary\n", "info";
-        message "[" . $plugin_name . "]   heimdall help            - Show this help\n", "info";
+        message "[" . $plugin_name . "]   hei stats/summary        - Show current stat summary\n", "info";
+        message "[" . $plugin_name . "]   hei status               - Show detailed stat distribution status\n", "info";
+        message "[" . $plugin_name . "]   hei distribute           - Manually trigger stat distribution\n", "info";
+        message "[" . $plugin_name . "]   hei hunt                 - Manually trigger monster hunting\n", "info";
+        message "[" . $plugin_name . "]   hei inventory/inv        - Show inventory summary\n", "info";
+        message "[" . $plugin_name . "]   hei avoid/avoidance      - Show monster avoidance status\n", "info";
+        message "[" . $plugin_name . "]   hei help                 - Show this help\n", "info";
         
     } else {
-        message "[" . $plugin_name . "] Unknown command: $subcmd. Use 'heimdall help' for available commands.\n", "warning";
+        message "[" . $plugin_name . "] Unknown command: $subcmd. Use 'hei help' for available commands.\n", "warning";
     }
 }
 

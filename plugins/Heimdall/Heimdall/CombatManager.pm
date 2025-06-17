@@ -18,10 +18,85 @@ my $hunting_destination = undef;
 my $hunting_mode = 'idle'; # 'idle', 'routing', 'hunting'
 my $last_monster_check = 0;
 
+# Monster avoidance mapping - maps to avoid specific monsters
+# Key: map name, Value: array of monster names/IDs to avoid
+my %monster_avoidance_map = (# Add more maps as needed...
+    # Example for later maps:
+    # 'moc_fild01' => ['Sandman', 'Desert Wolf'],
+    # 'gef_fild01' => ['Orc Warrior', 'Orc Lady'],
+);
+
+# Level-based monster avoidance (monsters too strong for character level)
+my %level_based_avoidance = (
+    # Monster ID => minimum safe level to fight
+    1018 => 18,  # Creamy - avoid until level 18
+    # Add more as needed based on testing
+);
+
 # Check if AI is busy (routing, moving, or attacking)
 # Returns 1 if busy, 0 if idle
 sub isAIBusy {
     return AI::is("route") || AI::is("move") || AI::is("attack");
+}
+
+# Check if a monster should be avoided based on map and level restrictions
+sub shouldAvoidMonster {
+    my $monster = shift;
+    return 1 unless $monster && $char && $field;
+    
+    my $monster_name = $monster->name;
+    my $monster_id = $monster->{nameID};
+    my $current_map = $field->baseName;
+    my $char_level = $char->{lv} || 1;
+    
+    # Check map-specific avoidance
+    if (exists $monster_avoidance_map{$current_map}) {
+        my $avoided_monsters = $monster_avoidance_map{$current_map};
+        for my $avoided (@$avoided_monsters) {
+            if ($monster_name eq $avoided || $monster_id eq $avoided) {
+                message "[" . $plugin_name . "] Avoiding $monster_name (ID: $monster_id) - map restriction on $current_map\n", "debug";
+                return 1;
+            }
+        }
+    }
+    
+    # Check level-based avoidance
+    if (exists $level_based_avoidance{$monster_id}) {
+        my $min_level = $level_based_avoidance{$monster_id};
+        if ($char_level < $min_level) {
+            message "[" . $plugin_name . "] Avoiding $monster_name (ID: $monster_id) - character level $char_level < required $min_level\n", "debug";
+            return 1;
+        }
+    }
+    
+    # Monster is safe to attack
+    return 0;
+}
+
+# Get list of monsters to avoid on current map (for debugging/info)
+sub getAvoidedMonstersForMap {
+    return unless $field;
+    
+    my $current_map = $field->baseName;
+    my @avoided_monsters = ();
+    
+    # Add map-specific avoided monsters
+    if (exists $monster_avoidance_map{$current_map}) {
+        push @avoided_monsters, @{$monster_avoidance_map{$current_map}};
+    }
+    
+    # Add level-based avoided monsters
+    if ($char) {
+        my $char_level = $char->{lv} || 1;
+        for my $monster_id (keys %level_based_avoidance) {
+            my $min_level = $level_based_avoidance{$monster_id};
+            if ($char_level < $min_level) {
+                push @avoided_monsters, "ID:$monster_id (need level $min_level)";
+            }
+        }
+    }
+    
+    return @avoided_monsters;
 }
 
 # Check HP and use potions if needed
@@ -106,6 +181,11 @@ sub findNearbyMonster {
         my $monster = $monstersList->getByID($monstersID[$i]);
         next unless $monster;
         next if $monster->{dead};
+        
+        # SAFETY CHECK: Skip dangerous monsters
+        if (shouldAvoidMonster($monster)) {
+            next;
+        }
         
         my $distance = distance($char->{pos_to}, $monster->{pos_to});
         if ($distance <= $attack_range && $distance < $closest_distance) {

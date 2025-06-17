@@ -89,14 +89,14 @@ sub hasItem {
         return 0;
     }
     
-    unless ($char->{inventory}) {
-        message "[" . $plugin_name . "] DEBUG: \$char->{inventory} is not defined!\n", "error";
+    unless ($char->inventory) {
+        message "[" . $plugin_name . "] DEBUG: \$char->inventory is not defined!\n", "error";
         return 0;
     }
     
     message "[" . $plugin_name . "] DEBUG: Both \$char and inventory exist, proceeding...\n", "success";
     
-    for my $item (@{$char->{inventory}->getItems()}) {
+    for my $item (@{$char->inventory->getItems()}) {
         next unless $item;
         message "[" . $plugin_name . "] DEBUG: Found item nameID: $item->{nameID}, name: $item->{name}\n", "info";
         if ($item->{nameID} == $item_id) {

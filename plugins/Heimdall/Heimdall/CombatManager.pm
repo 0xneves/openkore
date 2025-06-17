@@ -133,9 +133,11 @@ sub huntMonsters {
     
     # No nearby monsters - handle routing logic
     if ($hunting_mode eq 'hunting') {
-        # Just finished hunting, reset mode
-        $hunting_mode = 'idle';
-        message "[" . $plugin_name . "] Combat finished, resuming intelligent routing\n", "info";
+        # Just finished hunting - always resume routing to same destination
+        if ($hunting_destination) {
+            message "[" . $plugin_name . "] Combat finished, resuming route to ($hunting_destination->{x}, $hunting_destination->{y})\n", "info";
+            $hunting_mode = 'routing';
+        }
     }
     
     # Check if we need a new destination or if we reached current one

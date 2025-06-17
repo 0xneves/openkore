@@ -7,7 +7,7 @@ use Log qw(message);
 use Utils qw(distance);
 use AI;
 use Misc qw(positionNearPortal);
-use PathFinding;
+use Utils::PathFinding;
 use Heimdall::ResourceManager;
 use Heimdall::ConfigManager;
 

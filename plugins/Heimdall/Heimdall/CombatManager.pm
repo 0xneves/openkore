@@ -18,7 +18,7 @@ sub checkHP {
     my $hp_percent = ($char->{hp} / $char->{hp_max}) * 100;
     
     if ($hp_percent < $Heimdall::ConfigManager::hp_threshold) {
-        message "[" . $plugin_name . "] HP low: ${hp_percent}% (${char->{hp}}/${char->{hp_max}})\n", "warning";
+        message "[" . $plugin_name . "] HP low: $hp_percent% \n", "warning";
         
         # Try to use configured potion
         my $potion_id = $Heimdall::ConfigManager::potion_id;

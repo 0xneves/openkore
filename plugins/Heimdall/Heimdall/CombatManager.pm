@@ -7,6 +7,7 @@ use Log qw(message);
 use Utils qw(distance);
 use AI;
 use Misc qw(positionNearPortal);
+use PathFinding;
 use Heimdall::ResourceManager;
 use Heimdall::ConfigManager;
 
@@ -169,7 +170,36 @@ sub huntMonsters {
     }
 }
 
-# Find nearby monster within attack range
+# Check if monster is reachable via pathfinding
+sub isMonsterReachable {
+    my $monster = shift;
+    return 0 unless $monster && $char && $field;
+    
+    # Try to calculate path to monster
+    my $pathfinding = new PathFinding(
+        start => $char->{pos_to},
+        dest => $monster->{pos_to},
+        field => $field
+    );
+    
+    my $path = $pathfinding->run();
+    
+    # If no path found, monster is unreachable
+    return 0 unless $path && @$path > 0;
+    
+    # If path is too long compared to straight-line distance, probably unreachable terrain
+    my $straight_distance = distance($char->{pos_to}, $monster->{pos_to});
+    my $path_distance = @$path;
+    
+    # If walking path is more than 3x the straight distance, consider unreachable
+    if ($path_distance > ($straight_distance * 2)) {
+        return 0;
+    }
+    
+    return 1;
+}
+
+# Find nearby monster within attack range (only reachable ones)
 sub findNearbyMonster {
     return unless $char;
     
@@ -190,7 +220,12 @@ sub findNearbyMonster {
         }
         
         my $distance = distance($char->{pos_to}, $monster->{pos_to});
-        if ($distance <= $attack_range && $distance < $closest_distance) {
+        next if $distance > $attack_range;
+        
+        # REACHABILITY CHECK: Skip unreachable monsters
+        next unless isMonsterReachable($monster);
+        
+        if ($distance < $closest_distance) {
             $closest_distance = $distance;
             $closest_monster = {
                 id => $monstersID[$i],

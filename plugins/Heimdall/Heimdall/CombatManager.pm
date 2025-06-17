@@ -2,8 +2,10 @@ package Heimdall::CombatManager;
 
 use strict;
 use warnings;
-use Globals qw($char);
+use Globals qw($char $field $monstersList);
 use Log qw(message);
+use AI qw(ai_route);
+use Utils qw(distance);
 use Heimdall::ResourceManager;
 use Heimdall::ConfigManager;
 
@@ -72,6 +74,79 @@ sub checkHP {
 sub getHPPercent {
     return 0 unless $char && $char->{hp_max} && $char->{hp_max} > 0;
     return ($char->{hp} / $char->{hp_max}) * 100;
+}
+
+# Monster hunting function - finds and attacks nearby monsters
+sub huntMonsters {
+    return unless $char;
+    return unless $field;
+    
+    # Get all monsters on screen
+    my @monsters = @{$monstersList->getItems};
+    
+    if (@monsters) {
+        # Find closest monster
+        my $closest_monster;
+        my $closest_distance = 999;
+        
+        foreach my $monster (@monsters) {
+            next if $monster->{dead};
+            next if $monster->{ignore};
+            
+            my $distance = distance($char->{pos_to}, $monster->{pos_to});
+            
+            if ($distance < $closest_distance) {
+                $closest_distance = $distance;
+                $closest_monster = $monster;
+            }
+        }
+        
+        if ($closest_monster) {
+            message "[" . $plugin_name . "] Found monster: $closest_monster->{name} at distance $closest_distance\n", "info";
+            # Attack the monster using the main attack function
+            main::attack($closest_monster->{ID});
+        } else {
+            message "[" . $plugin_name . "] No valid monsters found - moving randomly\n", "info";
+            moveRandomly();
+        }
+    } else {
+        message "[" . $plugin_name . "] No monsters on screen - moving randomly\n", "info";
+        moveRandomly();
+    }
+}
+
+# Random movement function - uses OpenKore's exact random walk pattern
+sub moveRandomly {
+    return unless $char;
+    return unless $field;
+    
+    message "[" . $plugin_name . "] Starting random walk to find monsters\n", "info";
+    
+    # Generate random coordinates using OpenKore's method
+    my ($randX, $randY);
+    my $i = 500;
+    do {
+        $randX = int(rand($field->width-1)+1);
+        $randY = int(rand($field->height-1)+1);
+    } while (--$i && (!$field->isWalkable($randX, $randY) || $randX == 0 || $randY == 0));
+    
+    if (!$i) {
+        message "[" . $plugin_name . "] Could not find walkable coordinates for random walk\n", "warning";
+        return;
+    }
+    
+    message "[" . $plugin_name . "] Moving randomly to ($randX, $randY)\n", "info";
+    
+    # Use OpenKore's exact ai_route pattern
+    ai_route(
+        $field->baseName,
+        $randX,
+        $randY,
+        maxRouteTime => 30,
+        attackOnRoute => 2,
+        noMapRoute => 1,  # Avoid portals
+        isRandomWalk => 1
+    );
 }
 
 1; 

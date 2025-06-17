@@ -27,17 +27,9 @@ Plugins::register($plugin_name, $plugin_description, \&onUnload, \&onReload);
 
 # Add hooks to OpenKore events
 my $hooks = Plugins::addHooks(
-    ['start3', \&onStartup],                    # Called during OpenKore startup
     ['Network::Receive::map_changed', \&onMapEnter], # When entering any map
     ['mainLoop_pre', \&onMainLoop],             # Main loop
 );
-
-# Called during OpenKore startup
-sub onStartup {
-    message "[" . $plugin_name . "] Setting AI to manual mode...\n", "success";
-    Commands::run("ai manual");
-    message "[" . $plugin_name . "] AI set to manual - Heimdall is now in control!\n", "success";
-}
 
 # Called when entering any map (ensures AI stays manual)
 sub onMapEnter {

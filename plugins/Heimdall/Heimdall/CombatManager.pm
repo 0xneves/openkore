@@ -71,22 +71,50 @@ sub huntMonsters {
             
             message "[" . $plugin_name . "] Monster object type: " . ref($monster) . "\n", "debug";
             
-            if (ref($monster) ne 'HASH') {
-                message "[" . $plugin_name . "] Monster object is not HASH, it's: " . ref($monster) . ", skipping\n", "debug";
-                next;
-            }
+            # Handle Actor::Monster objects
+            my $monster_type = ref($monster);
+            message "[" . $plugin_name . "] Processing monster of type: $monster_type\n", "debug";
             
-            # Debug monster properties
-            message "[" . $plugin_name . "] Monster: " . ($monster->{name} || "unknown") . " dead=" . ($monster->{dead} || "0") . "\n", "debug";
-            
-            next if $monster->{dead};
-            next unless $monster->{pos_to};
-            
-            my $distance = distance($char->{pos_to}, $monster->{pos_to});
-            if ($distance < $closest_distance) {
-                $closest_distance = $distance;
-                $closest_monster = $monster;
-            }
+            if ($monster_type eq 'Actor::Monster') {
+                # Handle Actor::Monster object
+                message "[" . $plugin_name . "] Handling Actor::Monster object\n", "debug";
+                
+                my $monster_name = $monster->{name} || "unknown";
+                my $monster_dead = $monster->{dead} || 0;
+                
+                message "[" . $plugin_name . "] Monster: $monster_name dead=$monster_dead\n", "debug";
+                
+                next if $monster_dead;
+                next unless $monster->{pos_to};
+                
+                my $distance = distance($char->{pos_to}, $monster->{pos_to});
+                if ($distance < $closest_distance) {
+                    $closest_distance = $distance;
+                    $closest_monster = $monster;
+                }
+                
+            } elsif ($monster_type eq 'HASH') {
+                # Handle hash reference (legacy)
+                message "[" . $plugin_name . "] Handling HASH reference\n", "debug";
+                
+                my $monster_name = $monster->{name} || "unknown";
+                my $monster_dead = $monster->{dead} || 0;
+                
+                message "[" . $plugin_name . "] Monster: $monster_name dead=$monster_dead\n", "debug";
+                
+                next if $monster_dead;
+                next unless $monster->{pos_to};
+                
+                my $distance = distance($char->{pos_to}, $monster->{pos_to});
+                if ($distance < $closest_distance) {
+                    $closest_distance = $distance;
+                    $closest_monster = $monster;
+                }
+                
+                         } else {
+                 message "[" . $plugin_name . "] Unknown monster type: $monster_type, skipping\n", "debug";
+                 next;
+             }
         }
         
         if ($closest_monster) {

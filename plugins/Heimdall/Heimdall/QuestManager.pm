@@ -14,14 +14,14 @@ my $plugin_name = 'Heimdall::QuestManager';
 sub onQuestDeleted {
     my $args = shift;
     return unless $char;
-    return unless $args && $args->{questID};
+    return unless $field;
     
-    my $quest_id = $args->{questID};
-    my $current_map = $field ? $field->baseName : "unknown";
+    my $current_map = $field->baseName;
     
-    # Check for specific quest completion (21008) on int_land map
-    if ($quest_id == 21008 && $current_map eq 'int_land') {
-        message "[" . $plugin_name . "] Tutorial quest 21008 completed on int_land! Setting config flag and moving to teleport NPC\n", "success";
+    # OpenKore's quest_delete hook doesn't pass arguments (bug in OpenKore)
+    # So we check if we're on int_land and assume it's the tutorial quest
+    if ($current_map eq 'int_land') {
+        message "[" . $plugin_name . "] Quest deleted on int_land! Assuming tutorial quest 21008 completed, setting config flag and moving to teleport NPC\n", "success";
         
         # Set the config flag to indicate island captain quest is completed
         Heimdall::ConfigManager::setConfig('tutorial_island_captain', 1);

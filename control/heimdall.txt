@@ -1,0 +1,13 @@
+# Heimdall Plugin Configuration
+
+# HP percentage threshold to trigger hp potion usage (0-100)
+hp_threshold 70
+
+# Potion ID to use (11567 = [Evento] Pocao de Aprendiz)
+potion_id 11567
+
+# Flag indicating if character needs to purchase potions (0 = no, 1 = yes)
+potion_need_purchase 0 
+
+# Number of Caixa de Jornada boxes available (starts with 10)
+has_jornada 10

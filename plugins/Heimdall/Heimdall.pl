@@ -14,6 +14,10 @@ use Log qw(message);
 use AI qw(ai_route);
 use Utils qw(timeOut);
 
+# Import Heimdall modules
+use Heimdall::ResourceManager;
+use Heimdall::CombatManager;
+
 # Plugin information
 my $plugin_name = 'Heimdall';
 my $plugin_version = '0.1';
@@ -28,6 +32,7 @@ Plugins::register($plugin_name, $plugin_description, \&onUnload, \&onReload);
 # Add hooks to OpenKore events
 my $hooks = Plugins::addHooks(
     ['packet/map_loaded', \&onMapLoaded],       # When map is fully loaded
+    ['packet/hp_sp_changed', \&onHPChanged],    # When HP/SP changes (damage taken)
     ['mainLoop_pre', \&onMainLoop],             # Main loop
 );
 
@@ -49,12 +54,20 @@ sub onUnload {
     Plugins::delHooks($hooks);
 }
 
+# Called when HP/SP changes (damage taken, healing, etc.)
+sub onHPChanged {
+    my $args = shift;
+    
+    # Immediately check HP when it changes
+    Heimdall::CombatManager::checkHP();
+}
+
 # Main loop - core automation logic
 sub onMainLoop {
     return unless $net && $net->getState() == Network::IN_GAME;
     return unless timeOut($timeout, 10); # Check every 10 seconds
     
-    # Core automation logic will go here
+    # Core automation logic (no HP checking here anymore)
     tutorial();
     
     $timeout = time;
@@ -72,7 +85,7 @@ sub tutorial {
     return unless $current_map eq $tutorial_map; # Exit if not in tutorial map
     
     # Use Caixa de Jornada if available
-    useItemIfExists(23937); # Caixa de Jornada
+    Heimdall::ResourceManager::useItemIfExists(23937); # Caixa de Jornada
     
     # Get current character position
     my $char_x = $char->{pos_to}{x};
@@ -87,35 +100,6 @@ sub tutorial {
         # If X is greater than 28, move to int_land (56, 15)
         message "[" . $plugin_name . "] X=$char_x > 28, moving to int_land (56,15)\n", "success";
         ai_route("iz_int", 56, 15);
-    }
-}
-
-# Check if item exists in inventory by ID
-sub hasItem {
-    my $item_id = shift;
-    return 0 unless $char && $char->inventory;
-    
-    for my $item (@{$char->inventory->getItems()}) {
-        next unless $item;
-        if ($item->{nameID} == $item_id) {
-            return $item;
-        }
-    }
-    
-    return 0;
-}
-
-# Use item if it exists in inventory
-sub useItemIfExists {
-    my $item_id = shift;
-    
-    my $item = hasItem($item_id);
-    if ($item) {
-        message "[" . $plugin_name . "] Found $item->{name} (ID: $item_id) - using it!\n", "success";
-        $messageSender->sendItemUse($item->{ID}, $char->{ID});
-        return 1;
-    } else {
-        return 0;
     }
 }
 

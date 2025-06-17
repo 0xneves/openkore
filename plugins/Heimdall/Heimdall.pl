@@ -50,10 +50,19 @@ sub onMapLoaded {
 # Called when plugin is loaded/reloaded
 sub onReload {
     message "[" . $plugin_name . "] Plugin reloading...\n", "success";
+    
+    # Re-register hooks after reload
+    $hooks = Plugins::addHooks(
+        ['packet/map_loaded', \&onMapLoaded],       # When map is fully loaded
+        ['packet/hp_sp_changed', \&onHPChanged],    # When HP/SP changes (damage taken)
+        ['mainLoop_pre', \&onMainLoop],             # Main loop
+        ['base_level', \&onLevelUp],                # When character levels up
+    );
+    
     # Reset timeout and call main loop immediately
     $timeout = 0;
     onMainLoop();
-    message "[" . $plugin_name . "] Main loop executed immediately after reload\n", "success";
+    message "[" . $plugin_name . "] Plugin reloaded with hooks restored!\n", "success";
 }
 
 # Called when plugin is unloaded

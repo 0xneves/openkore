@@ -22,7 +22,7 @@ sub tutorialShip {
     
     my $tutorial_map = "iz_int";
     return unless $current_map eq $tutorial_map; # Exit if not in tutorial map
-    
+
     # Use Caixa de Jornada if available
     Heimdall::ResourceManager::useItemIfExists(23937); # Caixa de Jornada
     
@@ -52,6 +52,9 @@ sub tutorialIsland {
     
     my $tutorial_map = "int_land";
     return unless $current_map eq $tutorial_map; # Exit if not in tutorial island map
+
+    # Use Caixa de Jornada if available
+    Heimdall::ResourceManager::useItemIfExists(23937); # Caixa de Jornada
     
     # Check if we've already completed the island captain quest
     my $captain_completed = Heimdall::ConfigManager::getConfig('tutorial_island_captain') || 0;
@@ -61,6 +64,7 @@ sub tutorialIsland {
         return;
     } else {
         # Quest not completed yet, proceed with normal logic
+        
         # Check if character has Blessing buff (EFST_BLESSING)
         if (!$char->statusActive('EFST_BLESSING')) {
             message "[" . $plugin_name . "] Character does not have Blessing buff\n", "warning";
@@ -83,7 +87,7 @@ sub tutorialIsland {
 
 # Talk to Sailor NPC at coordinates (58, 69) with 3 next hits
 sub sailorDialogue {
-    return unless $char;
+    return unless $char && $field;
     
     my $sailor_x = 58;
     my $sailor_y = 69;
@@ -97,6 +101,7 @@ sub sailorDialogue {
     message "[" . $plugin_name . "] Attempting to talk to Sailor at ($sailor_x, $sailor_y)\n", "info";
     
     # Talk to NPC and send 3 continue responses
+    main::ai_route($field->baseName, $sailor_x, $sailor_y);
     main::ai_talkNPC($sailor_x, $sailor_y, "n n n n");
 }
 

@@ -46,9 +46,18 @@ sub huntMonsters {
             next unless $monster_ref;
             next unless ref($monster_ref) eq 'ARRAY';
             
+            # Debug array contents
+            message "[" . $plugin_name . "] Array size: " . scalar(@$monster_ref) . "\n", "debug";
+            for my $i (0 .. $#$monster_ref) {
+                my $item = $monster_ref->[$i];
+                message "[" . $plugin_name . "] Array[$i]: " . (defined $item ? ref($item) || "SCALAR" : "undefined") . "\n", "debug";
+            }
+            
             # Get the actual monster object from the array
             my $monster = $monster_ref->[0];
             next unless $monster;
+            
+            message "[" . $plugin_name . "] Monster object type: " . ref($monster) . "\n", "debug";
             next unless ref($monster) eq 'HASH';
             
             # Debug monster properties

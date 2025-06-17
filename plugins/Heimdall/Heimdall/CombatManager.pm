@@ -260,14 +260,21 @@ sub findNearbyMonster {
 
 # Attack a specific monster
 sub attackMonster {
-    my $monster_data = shift;
-    return unless $monster_data && $char;
+    my $monster_id = shift;
+    return unless $monster_id && $char;
     
-    message "[" . $plugin_name . "] Attacking monster: " . $monster_data->{monster}->name . 
-            " (index $monster_data->{index}) at distance $monster_data->{distance}\n", "info";
+    # Get monster object for logging
+    my $monster = $monstersList->getByID($monster_id);
+    if ($monster) {
+        my $distance = distance($char->{pos_to}, $monster->{pos_to});
+        message "[" . $plugin_name . "] Attacking monster: " . $monster->name . 
+                " (ID: $monster_id) at distance $distance\n", "info";
+    } else {
+        message "[" . $plugin_name . "] Attacking monster ID: $monster_id\n", "info";
+    }
     
     # Attack using the monster ID (same as "a <index>" command)
-    main::attack($monster_data->{id});
+    main::attack($monster_id);
 }
 
 # Get a random safe location (portal-safe and walkable)

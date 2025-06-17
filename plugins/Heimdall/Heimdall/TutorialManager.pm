@@ -53,6 +53,7 @@ sub tutorialIsland {
     my $tutorial_map = "int_land";
     return unless $current_map eq $tutorial_map; # Exit if not in tutorial island map
 
+    message "[" . $plugin_name . "] Before Config Manager\n", "success";
     # Use Caixa de Jornada if available
     Heimdall::ResourceManager::useItemIfExists(23937); # Caixa de Jornada
     

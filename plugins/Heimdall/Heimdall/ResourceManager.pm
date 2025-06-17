@@ -45,12 +45,17 @@ sub usePotion {
 
 # Check if character has a specific item
 sub hasItem {
+    message "[" . $plugin_name . "] Checking if item exists\n", "success";
     my $item_id = shift;
+    message "[" . $plugin_name . "] Item ID: $item_id\n", "success";
     return 0 unless $char && $char->inventory;
+
+    message "[" . $plugin_name . "] Inventory: " . $char->inventory->getItems() . "\n", "success";
     
     for my $item (@{$char->inventory->getItems()}) {
         next unless $item;
         if ($item->{nameID} == $item_id) {
+            message "[" . $plugin_name . "] Item found: $item->{name} (ID: $item_id)\n", "success";
             return $item;
         }
     }
@@ -73,9 +78,13 @@ sub getItemAmount {
 
 # Use item if it exists in inventory
 sub useItemIfExists {
+    message "[" . $plugin_name . "] Getting item amount\n", "success";
     my $item_id = shift;
+
+    message "[" . $plugin_name . "] Getting item id\n", "success";
     
     my $item = hasItem($item_id);
+    message "[" . $plugin_name . "] Item exists?: $item\n", "success";
     if ($item) {
         message "[" . $plugin_name . "] Found $item->{name} (ID: $item_id) - using it!\n", "success";
         $messageSender->sendItemUse($item->{ID}, $char->{ID});

@@ -78,7 +78,7 @@ sub useItemIfExists {
         next unless $item;
         if ($item->{nameID} == $item_id && $item->{amount} > 0) {
             message "[" . $plugin_name . "] Using item: $item->{name} (ID: $item_id)\n", "info";
-            main::ai_useItem($item->{binID});
+            $item->use();
             return 1;
         }
     }

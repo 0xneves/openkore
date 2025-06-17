@@ -32,14 +32,25 @@ sub huntMonsters {
     # Get all monsters in the area
     my @monsters = $monstersList->getItems();
     
+    message "[" . $plugin_name . "] Found " . scalar(@monsters) . " monsters in area\n", "debug";
+    
     if (@monsters) {
         # Find the closest monster
         my $closest_monster;
         my $closest_distance = 999;
         
         for my $monster (@monsters) {
+            # Debug what we got
+            message "[" . $plugin_name . "] Monster item: " . (defined $monster ? ref($monster) : "undefined") . "\n", "debug";
+            
             next unless $monster;
+            next unless ref($monster) eq 'HASH';
+            
+            # Debug monster properties
+            message "[" . $plugin_name . "] Monster: " . ($monster->{name} || "unknown") . " dead=" . ($monster->{dead} || "0") . "\n", "debug";
+            
             next if $monster->{dead};
+            next unless $monster->{pos_to};
             
             my $distance = distance($char->{pos_to}, $monster->{pos_to});
             if ($distance < $closest_distance) {

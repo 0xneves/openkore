@@ -223,7 +223,7 @@ sub changeToFirstJob {
     }
     
     # Get dialogue option for the job
-    my $job_option = Heimdall::LevelingManager::getJobDialogueOption($next_job);
+    my $job_option = Heimdall::LevelingManager::getFirstJobDialogueOption($next_job);
     
     if (!defined $job_option) {
         message "[" . $plugin_name . "] No dialogue option found for job: $next_job\n", "error";

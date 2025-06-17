@@ -12,6 +12,7 @@ use Plugins;
 use Globals qw($char %config $net);
 use Log qw(message);
 use Utils qw(timeOut);
+use Commands;
 
 # Import Heimdall modules
 use lib $Plugins::current_plugin_folder;
@@ -32,6 +33,11 @@ our $timeout;
 
 # Register the plugin
 Plugins::register($plugin_name, $plugin_description, \&onUnload, \&onReload);
+
+# Register plugin commands
+my $commands = Commands::register(
+    ['hei', 'Heimdall plugin commands', \&onCommand]
+);
 
 # Add hooks to OpenKore events
 my $hooks = Plugins::addHooks(
@@ -70,6 +76,65 @@ sub onReload {
 sub onUnload {
     message "[" . $plugin_name . "] Plugin unloading...\n", "success";
     Plugins::delHooks($hooks);
+    Commands::unregister($commands);
+}
+
+# Command handler for Heimdall plugin commands
+sub onCommand {
+    my ($cmd, $args) = @_;
+    
+    my @params = split(/\s+/, $args);
+    my $subcmd = shift @params || '';
+    
+    if ($subcmd eq 'stats' || $subcmd eq 'summary') {
+        # Show current stat distribution summary
+        my $summary = Heimdall::LevelingManager::getStatSummary();
+        if ($summary) {
+            message "[" . $plugin_name . "] $summary\n", "info";
+        } else {
+            message "[" . $plugin_name . "] Unable to get stat summary (not logged in?)\n", "warning";
+        }
+        
+    } elsif ($subcmd eq 'status') {
+        # Show detailed stat distribution status
+        my $build = Heimdall::ConfigManager::getConfig('job_class');
+        return unless $build;
+        Heimdall::LevelingManager::showStatDistributionStatus($build);
+        
+    } elsif ($subcmd eq 'distribute') {
+        # Manually trigger stat distribution
+        my $build = Heimdall::ConfigManager::getConfig('job_class');
+        return unless $build;
+        message "[" . $plugin_name . "] Manually triggering stat distribution for $build build...\n", "info";
+        Heimdall::LevelingManager::distributeStatsByBuild($build);
+        
+    } elsif ($subcmd eq 'hunt') {
+        # Manually trigger monster hunting
+        message "[" . $plugin_name . "] Manually triggering monster hunting...\n", "info";
+        Heimdall::CombatManager::huntMonsters();
+        
+    } elsif ($subcmd eq 'inventory' || $subcmd eq 'inv') {
+        # Show inventory summary
+        my $summary = Heimdall::ResourceManager::getInventorySummary();
+        if ($summary) {
+            message "[" . $plugin_name . "] $summary\n", "info";
+        } else {
+            message "[" . $plugin_name . "] Unable to get inventory summary (not logged in?)\n", "warning";
+        }
+        
+    } elsif ($subcmd eq 'help' || $subcmd eq '') {
+        # Show available commands
+        message "[" . $plugin_name . "] Available commands:\n", "info";
+        message "[" . $plugin_name . "]   heimdall stats/summary   - Show current stat summary\n", "info";
+        message "[" . $plugin_name . "]   heimdall status          - Show detailed stat distribution status\n", "info";
+        message "[" . $plugin_name . "]   heimdall distribute      - Manually trigger stat distribution\n", "info";
+        message "[" . $plugin_name . "]   heimdall hunt            - Manually trigger monster hunting\n", "info";
+        message "[" . $plugin_name . "]   heimdall inventory/inv   - Show inventory summary\n", "info";
+        message "[" . $plugin_name . "]   heimdall help            - Show this help\n", "info";
+        
+    } else {
+        message "[" . $plugin_name . "] Unknown command: $subcmd. Use 'heimdall help' for available commands.\n", "warning";
+    }
 }
 
 # Called when HP/SP changes (damage taken, healing, etc.)

@@ -92,41 +92,6 @@ sub huntMonsters {
     }
 }
 
-# Move randomly while avoiding portals
-sub moveRandomly {
-    return unless $char;
-    return unless $field;
-    
-    # Clear AI to ensure we can move
-    AI::clear();
-    
-    # Use OpenKore's built-in random walk pattern with portal avoidance
-    my ($randX, $randY);
-    
-    while (1) {
-        $randX = int(rand($field->width()));
-        $randY = int(rand($field->height()));
-        
-        # Check if position is walkable
-        next unless $field->isWalkable($randX, $randY);
-        
-        # Check if position is too close to a portal (avoid within 5 blocks)
-        next if positionNearPortal({x => $randX, y => $randY}, 5);
-        
-        # Position is good - walkable and away from portals
-        last;
-    }
-    
-    message "[" . $plugin_name . "] Moving randomly to ($randX, $randY) - portal-safe location\n", "info";
-    
-    # Use ai_route with comprehensive portal avoidance flags
-    main::ai_route($field->baseName, $randX, $randY, 
-        isRandomWalk => 1,
-        noMapRoute => 1,
-        avoidWalls => 1,
-        noSitAuto => 1);
-}
-
 # Find nearby monster within attack range
 sub findNearbyMonster {
     return unless $char;

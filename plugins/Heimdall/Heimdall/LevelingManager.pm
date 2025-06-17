@@ -92,9 +92,9 @@ sub checkStatsAndSkills {
         $job_class = lc($job_class); # Normalize to lowercase
         
         if ($job_class eq 'stalker') {
-            distributeStalkerStats();
+            distributeStatsByBuild('stalker');
         } else {
-            distributeStalkerStats(); # Default to stalker
+            distributeStatsByBuild('stalker'); # Default to stalker
         }
     }
     
@@ -108,102 +108,172 @@ sub checkStatsAndSkills {
     }
 }
 
-# Stalker stat distribution logic
-sub distributeStalkerStats {
-    message "[" . $plugin_name . "] Distributing stats for Stalker build\n", "info";
+# Dynamic stat distribution system - configuration driven
+my %stat_builds = (
+    'stalker' => [
+        [70, ['agi', 'dex']],    # Phase 1: AGI and DEX to 70 (balanced)
+        [30, ['str', 'luk']],    # Phase 2: STR and LUK to 30 (balanced)
+        [99, ['agi']],           # Phase 3: AGI to 99
+        [85, ['dex']],           # Phase 4: DEX to 85
+        [19, ['vit']],           # Phase 5: VIT to 19
+    ],
+);
+
+# Generic stat distribution engine
+sub distributeStatsByBuild {
+    my $build_name = shift || 'stalker';
+    
+    message "[" . $plugin_name . "] Distributing stats for $build_name build\n", "info";
+    
+    my $phases = $stat_builds{$build_name};
+    unless ($phases) {
+        message "[" . $plugin_name . "] Unknown stat build: $build_name\n", "error";
+        return;
+    }
     
     while ($char->{points_free} > 0) {
-        my $agi = $char->{agi_bonus} + $char->{agi};
-        my $dex = $char->{dex_bonus} + $char->{dex};
-        my $str = $char->{str_bonus} + $char->{str};
-        my $luk = $char->{luk_bonus} + $char->{luk};
-        my $vit = $char->{vit_bonus} + $char->{vit};
+        my $current_phase = getCurrentStatPhase($phases);
         
-        my $success = 0;
-        
-        # Phase 1: AGI and DEX to 70 (ping-pong between them)
-        if ($agi < 70 || $dex < 70) {
-            if ($agi < $dex && $agi < 70) {
-                # AGI is lower, increase AGI
-                $success = addStatPoint('agi');
-                message "[" . $plugin_name . "] Phase 1: AGI/DEX to 70 - Increasing AGI (was lower): $agi -> " . ($agi + 1) . "\n", "info" if $success;
-            } elsif ($dex < $agi && $dex < 70) {
-                # DEX is lower, increase DEX
-                $success = addStatPoint('dex');
-                message "[" . $plugin_name . "] Phase 1: AGI/DEX to 70 - Increasing DEX (was lower): $dex -> " . ($dex + 1) . "\n", "info" if $success;
-            } elsif ($agi == $dex && $agi < 70) {
-                # They're equal, alternate (prefer AGI first when tied)
-                $success = addStatPoint('agi');
-                message "[" . $plugin_name . "] Phase 1: AGI/DEX to 70 - Equal stats, increasing AGI: $agi -> " . ($agi + 1) . "\n", "info" if $success;
-            } elsif ($agi < 70) {
-                # Only AGI needs more points
-                $success = addStatPoint('agi');
-                message "[" . $plugin_name . "] Phase 1: AGI/DEX to 70 - Finishing AGI: $agi -> " . ($agi + 1) . "\n", "info" if $success;
-            } elsif ($dex < 70) {
-                # Only DEX needs more points
-                $success = addStatPoint('dex');
-                message "[" . $plugin_name . "] Phase 1: AGI/DEX to 70 - Finishing DEX: $dex -> " . ($dex + 1) . "\n", "info" if $success;
-            } else {
-                # This shouldn't happen, but safety check
-                message "[" . $plugin_name . "] Phase 1 logic error - no stat to allocate\n", "error";
-                $success = 0;
-            }
-        }
-        # Phase 2: STR and LUK to 30 (ping-pong between them)
-        elsif ($str < 30 || $luk < 30) {
-            if ($str < $luk && $str < 30) {
-                # STR is lower, increase STR
-                $success = addStatPoint('str');
-                message "[" . $plugin_name . "] Phase 2: STR/LUK to 30 - Increasing STR (was lower): $str -> " . ($str + 1) . "\n", "info" if $success;
-            } elsif ($luk < $str && $luk < 30) {
-                # LUK is lower, increase LUK
-                $success = addStatPoint('luk');
-                message "[" . $plugin_name . "] Phase 2: STR/LUK to 30 - Increasing LUK (was lower): $luk -> " . ($luk + 1) . "\n", "info" if $success;
-            } elsif ($str == $luk && $str < 30) {
-                # They're equal, alternate (prefer STR first when tied)
-                $success = addStatPoint('str');
-                message "[" . $plugin_name . "] Phase 2: STR/LUK to 30 - Equal stats, increasing STR: $str -> " . ($str + 1) . "\n", "info" if $success;
-            } elsif ($str < 30) {
-                # Only STR needs more points
-                $success = addStatPoint('str');
-                message "[" . $plugin_name . "] Phase 2: STR/LUK to 30 - Finishing STR: $str -> " . ($str + 1) . "\n", "info" if $success;
-            } elsif ($luk < 30) {
-                # Only LUK needs more points
-                $success = addStatPoint('luk');
-                message "[" . $plugin_name . "] Phase 2: STR/LUK to 30 - Finishing LUK: $luk -> " . ($luk + 1) . "\n", "info" if $success;
-            } else {
-                # This shouldn't happen, but safety check
-                message "[" . $plugin_name . "] Phase 2 logic error - no stat to allocate\n", "error";
-                $success = 0;
-            }
-        }
-        # Phase 3: AGI to 99 (same as Rogue)
-        elsif ($agi < 99) {
-            $success = addStatPoint('agi');
-            message "[" . $plugin_name . "] Phase 3: AGI to 99 - AGI: $agi\n", "info" if $success;
-        }
-        # Phase 4: DEX to 85 (Stalker gets 1 more DEX)
-        elsif ($dex < 85) {
-            $success = addStatPoint('dex');
-            message "[" . $plugin_name . "] Phase 4: DEX to 85 - DEX: $dex\n", "info" if $success;
-        }
-        # Phase 5: VIT to 19 (Stalker exclusive)
-        elsif ($vit < 19) {
-            $success = addStatPoint('vit');
-            message "[" . $plugin_name . "] Phase 5: VIT to 19 - VIT: $vit\n", "info" if $success;
-        }
-        # All stats complete for Stalker
-        else {
-            message "[" . $plugin_name . "] Stalker stat build complete! AGI: $agi, DEX: $dex, STR: $str, LUK: $luk, VIT: $vit\n", "success";
+        unless ($current_phase) {
+            message "[" . $plugin_name . "] Stat build complete!\n", "success";
             last;
         }
         
-        # Break if we couldn't allocate any points (not enough points for next stat)
-        if (!$success) {
+        my $success = allocateStatInPhase($current_phase);
+        
+        unless ($success) {
             message "[" . $plugin_name . "] Cannot allocate more stat points - insufficient points remaining\n", "warning";
             last;
         }
     }
+}
+
+# Find current active phase based on character stats
+sub getCurrentStatPhase {
+    my $phases = shift;
+    
+    for my $i (0..$#{$phases}) {
+        my ($target, $stats) = @{$phases->[$i]};
+        
+        # Check if any stat in this phase is incomplete
+        for my $stat (@$stats) {
+            my $current_value = getCurrentStatValue($stat);
+            if ($current_value < $target) {
+                return {
+                    index => $i + 1,
+                    target => $target,
+                    stats => $stats,
+                    phase_desc => join('/', map { uc($_) } @$stats) . " to $target"
+                };
+            }
+        }
+    }
+    
+    return undef; # All phases complete
+}
+
+# Allocate one stat point within a phase (handles both single and multi-stat phases)
+sub allocateStatInPhase {
+    my $phase = shift;
+    my ($target, $stats) = ($phase->{target}, $phase->{stats});
+    
+    # Single stat phase - straightforward
+    if (@$stats == 1) {
+        my $stat = $stats->[0];
+        my $base_current = getCurrentStatValue($stat);
+        
+        if ($base_current < $target) {
+            my $total_before = getTotalStatValue($stat);
+            my $success = addStatPoint($stat);
+            
+            if ($success) {
+                my $total_after = getTotalStatValue($stat);
+                message "[" . $plugin_name . "] Phase $phase->{index}: $phase->{phase_desc} - " . uc($stat) . " base: $base_current -> " . ($base_current + 1) . " (total: $total_before -> $total_after)\n", "info";
+            }
+            return $success;
+        }
+        return 0;
+    }
+    
+    # Multi-stat phase - ping-pong between stats, prioritizing the lowest base stat
+    my @incomplete_stats = grep { getCurrentStatValue($_) < $target } @$stats;
+    return 0 unless @incomplete_stats;
+    
+    # Find the stat with lowest base value
+    my $lowest_stat = $incomplete_stats[0];
+    my $lowest_base = getCurrentStatValue($lowest_stat);
+    
+    for my $stat (@incomplete_stats[1..$#incomplete_stats]) {
+        my $base_value = getCurrentStatValue($stat);
+        if ($base_value < $lowest_base) {
+            $lowest_stat = $stat;
+            $lowest_base = $base_value;
+        }
+    }
+    
+    my $total_before = getTotalStatValue($lowest_stat);
+    my $success = addStatPoint($lowest_stat);
+    
+    if ($success) {
+        my $total_after = getTotalStatValue($lowest_stat);
+        message "[" . $plugin_name . "] Phase $phase->{index}: $phase->{phase_desc} - " . uc($lowest_stat) . " base: $lowest_base -> " . ($lowest_base + 1) . " (total: $total_before -> $total_after)\n", "info";
+    }
+    return $success;
+}
+
+# Get current BASE stat value (for allocation decisions) - bonuses don't count!
+sub getCurrentStatValue {
+    my $stat = shift;
+    return $char->{$stat} || 0;  # Only base stats matter for point allocation
+}
+
+# Get total stat value including bonuses (for display/information)
+sub getTotalStatValue {
+    my $stat = shift;
+    return ($char->{$stat} || 0) + ($char->{"${stat}_bonus"} || 0);
+}
+
+# Debug function to show current stat distribution progress
+sub showStatDistributionStatus {
+    my $build_name = shift || 'stalker';
+    
+    message "[" . $plugin_name . "] === Stat Distribution Status ($build_name) ===\n", "info";
+    message "[" . $plugin_name . "] Free points: " . ($char->{points_free} || 0) . "\n", "info";
+    
+    my $phases = $stat_builds{$build_name};
+    unless ($phases) {
+        message "[" . $plugin_name . "] Unknown stat build: $build_name\n", "error";
+        return;
+    }
+    
+    # Show all stats with base/bonus/total breakdown
+    my @all_stats = qw(str agi vit int dex luk);
+    message "[" . $plugin_name . "] Current Stats (Base + Bonus = Total):\n", "info";
+    
+    for my $stat (@all_stats) {
+        my $base = getCurrentStatValue($stat);
+        my $bonus = ($char->{"${stat}_bonus"} || 0);
+        my $total = getTotalStatValue($stat);
+        message "[" . $plugin_name . "]   " . uc($stat) . ": $base + $bonus = $total\n", "info";
+    }
+    
+    # Show phase progress
+    my $current_phase = getCurrentStatPhase($phases);
+    if ($current_phase) {
+        message "[" . $plugin_name . "] Current Phase: $current_phase->{index} ($current_phase->{phase_desc})\n", "info";
+        
+        # Show progress for each stat in current phase
+        for my $stat (@{$current_phase->{stats}}) {
+            my $base = getCurrentStatValue($stat);
+            my $target = $current_phase->{target};
+            my $remaining = $target - $base;
+            message "[" . $plugin_name . "]   " . uc($stat) . ": $base/$target (need $remaining more base points)\n", "info";
+        }
+    } else {
+        message "[" . $plugin_name . "] All phases complete!\n", "success";
+    }
+    
+    message "[" . $plugin_name . "] === End Status ===\n", "info";
 }
 
 # Add a single stat point to the specified stat
@@ -229,11 +299,9 @@ sub addStatPoint {
         return 0;
     }
     
-    # Calculate the cost to increase this stat
-    my $stat_name = lc($stat);
-    my $bonus_field = $stat_name . '_bonus';
-    my $current_stat = $char->{$bonus_field} + $char->{$stat_name};
-    my $cost = getStatCost($current_stat);
+    # Calculate the cost to increase this stat (based on total current stat)
+    my $current_total_stat = getTotalStatValue($stat);
+    my $cost = getStatCost($current_total_stat);
     
     # Check if we have enough points
     if ($char->{points_free} < $cost) {
@@ -278,16 +346,16 @@ sub getStatCost {
     }
 }
 
-# Get current stat build progress summary
+# Get current stat build progress summary (shows total stats for display)
 sub getStatSummary {
     return unless $char;
     
-    my $agi = $char->{agi_bonus} + $char->{agi};
-    my $dex = $char->{dex_bonus} + $char->{dex};
-    my $str = $char->{str_bonus} + $char->{str};
-    my $luk = $char->{luk_bonus} + $char->{luk};
-    my $vit = $char->{vit_bonus} + $char->{vit};
-    my $int = $char->{int_bonus} + $char->{int};
+    my $str = getTotalStatValue('str');
+    my $agi = getTotalStatValue('agi');
+    my $vit = getTotalStatValue('vit');
+    my $int = getTotalStatValue('int');
+    my $dex = getTotalStatValue('dex');
+    my $luk = getTotalStatValue('luk');
     
     return "STR: $str, AGI: $agi, VIT: $vit, INT: $int, DEX: $dex, LUK: $luk (Free: $char->{points_free})";
 }
@@ -349,7 +417,7 @@ sub getFirstJob {
 }
 
 # Get job change dialogue option (r0-r6) for a job
-sub getJobDialogueOption {
+sub getFirstJobDialogueOption {
     my $job_name = shift;
     return unless $job_name;
     

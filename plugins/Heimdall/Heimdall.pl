@@ -20,6 +20,7 @@ use Heimdall::CombatManager;
 use Heimdall::ConfigManager;
 use Heimdall::TutorialManager;
 use Heimdall::LevelingManager;
+use Heimdall::QuestManager;
 
 # Plugin information
 my $plugin_name = 'Heimdall';
@@ -38,6 +39,7 @@ my $hooks = Plugins::addHooks(
     ['packet/hp_sp_changed', \&onHPChanged],    # When HP/SP changes (damage taken)
     ['mainLoop_pre', \&onMainLoop],             # Main loop
     ['base_level', \&onLevelUp],                # When character levels up
+    ['quest_delete', \&onQuestDeleted],         # When a quest is completed/deleted
 );
 
 # Called when map is fully loaded
@@ -57,6 +59,7 @@ sub onReload {
         ['packet/hp_sp_changed', \&onHPChanged],    # When HP/SP changes (damage taken)
         ['mainLoop_pre', \&onMainLoop],             # Main loop
         ['base_level', \&onLevelUp],                # When character levels up
+        ['quest_delete', \&onQuestDeleted],         # When a quest is completed/deleted
     );
     
     # Reset timeout and call main loop immediately
@@ -87,6 +90,14 @@ sub onLevelUp {
     
     # Call the LevelingManager to handle stat distribution
     Heimdall::LevelingManager::onLevelUp();
+}
+
+# Called when a quest is deleted/completed
+sub onQuestDeleted {
+    my $args = shift;
+    
+    # Call the QuestManager to handle quest completion
+    Heimdall::QuestManager::onQuestDeleted($args);
 }
 
 # Main loop - core automation logic

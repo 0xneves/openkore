@@ -7,6 +7,7 @@ use Log qw(message);
 use AI qw(ai_route);
 use Heimdall::ResourceManager;
 use Heimdall::ConfigManager;
+use Heimdall::QuestManager;
 
 # Plugin name for consistent logging
 my $plugin_name = 'Heimdall::TutorialManager';
@@ -52,22 +53,31 @@ sub tutorialIsland {
     my $tutorial_map = "int_land";
     return unless $current_map eq $tutorial_map; # Exit if not in tutorial island map
     
-    # Check if character has Blessing buff (EFST_BLESSING)
-    if (!$char->statusActive('EFST_BLESSING')) {
-        message "[" . $plugin_name . "] Character does not have Blessing buff\n", "warning";
-        captainDialogue();
+    # Check if we've already completed the island captain quest
+    my $captain_completed = Heimdall::ConfigManager::getConfigValue('tutorial_island_captain') || 0;
+    
+    if ($captain_completed) {
+        Heimdall::QuestManager::teleportToIzlude();
         return;
-    }
-    
-    message "[" . $plugin_name . "] Character has Blessing buff - ready for training\n", "success";
-    
-    # Check if we have enough items (ID 6008) to complete the quest
-    if (Heimdall::ResourceManager::hasItem(6008) && Heimdall::ResourceManager::getItemAmount(6008) >= 3) {
-        # We have enough items, talk to the Sailor
-        sailorDialogue();
     } else {
-        # We need more items, start hunting monsters
-        Heimdall::CombatManager::huntMonsters();
+        # Quest not completed yet, proceed with normal logic
+        # Check if character has Blessing buff (EFST_BLESSING)
+        if (!$char->statusActive('EFST_BLESSING')) {
+            message "[" . $plugin_name . "] Character does not have Blessing buff\n", "warning";
+            captainDialogue();
+            return;
+        }
+        
+        message "[" . $plugin_name . "] Character has Blessing buff - ready for training\n", "success";
+        
+        # Check if we have enough items (ID 6008) to complete the quest
+        if (Heimdall::ResourceManager::hasItem(6008) && Heimdall::ResourceManager::getItemAmount(6008) >= 3) {
+            # We have enough items, talk to the Sailor
+            sailorDialogue();
+        } else {
+            # We need more items, start hunting monsters
+            Heimdall::CombatManager::huntMonsters();
+        }
     }
 }
 

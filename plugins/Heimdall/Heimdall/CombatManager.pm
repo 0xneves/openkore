@@ -172,9 +172,10 @@ sub huntMonsters {
 
 # Check if monster is reachable via pathfinding
 sub isMonsterReachable {
+    message "1", "debug";
     my $monster = shift;
     return 0 unless $monster && $char && $field;
-    
+    message "2", "debug";
     # Create PathFinding object and reset with parameters
     my $pathfinding = new PathFinding();
     my $result = $pathfinding->reset(
@@ -183,33 +184,36 @@ sub isMonsterReachable {
         field => $field,
         avoidWalls => 1
     );
-    
+    message "3", "debug";
     return 0 unless $result; # reset failed
-    
+    message "4", "debug";
     # Try to calculate path to monster
     my @solution = ();
     my $path_result = $pathfinding->run(\@solution);
-    
+    message "5", "debug";
     # Check pathfinding result
     # -1 = no path found, -2 = not reset, -3 = not complete, positive = success
     if ($path_result < 0) {
+        message "6", "debug";
         return 0; # No path found or error
     }
-    
+    message "7", "debug";
     # If path is too long compared to straight-line distance, probably unreachable terrain
     my $straight_distance = distance($char->{pos_to}, $monster->{pos_to});
     my $path_distance = scalar(@solution);
     
     # If walking path is more than 2x the straight distance, consider unreachable
     if ($path_distance > ($straight_distance * 2)) {
+        message "8", "debug";
         return 0;
     }
-    
+    message "9", "debug";
     return 1;
 }
 
 # Find nearby monster within attack range (only reachable ones)
 sub findNearbyMonster {
+    message "a", "debug";
     return unless $char;
     
     my $attack_range = 15; # Maximum distance to consider for attack
@@ -218,22 +222,23 @@ sub findNearbyMonster {
     
     for my $i (0..$#monstersID) {
         next unless $monstersID[$i];
-        
+        message "b", "debug";
         my $monster = $monstersList->getByID($monstersID[$i]);
         next unless $monster;
         next if $monster->{dead};
-        
+        message "c", "debug";
         # SAFETY CHECK: Skip dangerous monsters
         if (shouldAvoidMonster($monster)) {
+            message "d", "debug";
             next;
         }
-        
+        message "e", "debug";
         my $distance = distance($char->{pos_to}, $monster->{pos_to});
         next if $distance > $attack_range;
-        
+        message "f", "debug";
         # REACHABILITY CHECK: Skip unreachable monsters
         next unless isMonsterReachable($monster);
-        
+        message "g", "debug";
         if ($distance < $closest_distance) {
             $closest_distance = $distance;
             $closest_monster = {
@@ -244,7 +249,7 @@ sub findNearbyMonster {
             };
         }
     }
-    
+    message "h", "debug";
     return $closest_monster;
 }
 

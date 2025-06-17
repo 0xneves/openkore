@@ -9,7 +9,7 @@ use warnings;
 
 # Import required OpenKore modules
 use Plugins;
-use Globals qw($char %config $net $messageSender);
+use Globals qw($char %config $net $messageSender $field);
 use Log qw(message);
 use Commands;
 use Utils qw(timeOut);
@@ -63,8 +63,9 @@ sub onMainLoop {
 # Tutorial function - handles initial character setup
 sub tutorial {
     return unless $char;
+    return unless $field; # Safety check - field must be loaded
     
-    my $current_map = $char->{map};
+    my $current_map = $field->baseName;
     my $tutorial_map = "iz_int";
     
     if ($current_map eq $tutorial_map) {

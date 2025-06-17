@@ -9,6 +9,76 @@ use Heimdall::ConfigManager;
 # Plugin name for consistent logging
 my $plugin_name = 'Heimdall::LevelingManager';
 
+# Job progression mapping - defines the complete progression path for each target class
+my %job_progression = (
+    'stalker' => {
+        path => ['novice', 'thief', 'rogue', 'novice_high', 'thief_high', 'stalker'],
+        first_job => 'thief',
+        second_job => 'rogue',
+        transcendent_job => 'stalker'
+    },
+    'sinx' => {
+        path => ['novice', 'thief', 'assassin', 'novice_high', 'thief_high', 'sinx'],
+        first_job => 'thief',
+        second_job => 'assassin', 
+        transcendent_job => 'sinx'
+    },
+    'lord_knight' => {
+        path => ['novice', 'swordsman', 'knight', 'novice_high', 'swordsman_high', 'lord_knight'],
+        first_job => 'swordsman',
+        second_job => 'knight',
+        transcendent_job => 'lord_knight'
+    },
+    'high_wizard' => {
+        path => ['novice', 'mage', 'wizard', 'novice_high', 'mage_high', 'high_wizard'],
+        first_job => 'mage',
+        second_job => 'wizard',
+        transcendent_job => 'high_wizard'
+    },
+    'sniper' => {
+        path => ['novice', 'archer', 'hunter', 'novice_high', 'archer_high', 'sniper'],
+        first_job => 'archer',
+        second_job => 'hunter',
+        transcendent_job => 'sniper'
+    },
+    'whitesmith' => {
+        path => ['novice', 'merchant', 'blacksmith', 'novice_high', 'merchant_high', 'whitesmith'],
+        first_job => 'merchant',
+        second_job => 'blacksmith',
+        transcendent_job => 'whitesmith'
+    },
+    'high_priest' => {
+        path => ['novice', 'acolyte', 'priest', 'novice_high', 'acolyte_high', 'high_priest'],
+        first_job => 'acolyte',
+        second_job => 'priest',
+        transcendent_job => 'high_priest'
+    }
+);
+
+# Job ID mapping - maps job names to their OpenKore job IDs
+my %job_id_map = (
+    'novice' => 0,
+    'swordsman' => 1,
+    'mage' => 2,
+    'archer' => 3,
+    'acolyte' => 4,
+    'merchant' => 5,
+    'thief' => 6,
+    'knight' => 7,
+    'priest' => 8,
+    'wizard' => 9,
+    'blacksmith' => 10,
+    'hunter' => 11,
+    'assassin' => 12,
+    'rogue' => 17,
+    'stalker' => 4018,
+    'sinx' => 4015
+    # Add more as needed
+);
+
+# Reverse job ID mapping - maps job IDs to job names
+my %job_name_map = reverse %job_id_map;
+
 # Handle level up event and distribute stat points
 sub onLevelUp {
     return unless $char;
@@ -17,7 +87,7 @@ sub onLevelUp {
     message "[" . $plugin_name . "] Level up detected! Free points: $char->{points_free}\n", "success";
     
     # Get job class from config (default to "stalker")
-    my $job_class = Heimdall::ConfigManager::getConfig('job_class') || 'stalker';
+    my $job_class = Heimdall::ConfigManager::getConfig('job_class');
     $job_class = lc($job_class); # Normalize to lowercase
     
     message "[" . $plugin_name . "] Current job class: $job_class\n", "info";
@@ -213,6 +283,82 @@ sub getStatSummary {
     my $int = $char->{int_bonus} + $char->{int};
     
     return "STR: $str, AGI: $agi, VIT: $vit, INT: $int, DEX: $dex, LUK: $luk (Free: $char->{points_free})";
+}
+
+# Get the next job in progression for a target class
+sub getNextJob {
+    my $target_class = shift;
+    return unless $target_class && $char;
+    
+    $target_class = lc($target_class);
+    return unless exists $job_progression{$target_class};
+    
+    my $current_job_id = $char->{jobID};
+    my $current_job_name = $job_name_map{$current_job_id} || 'unknown';
+    
+    my $progression = $job_progression{$target_class};
+    my @path = @{$progression->{path}};
+    
+    # Find current position in progression path
+    for my $i (0..$#path) {
+        if ($path[$i] eq $current_job_name) {
+            # Found current job, return next job in path
+            if ($i < $#path) {
+                return $path[$i + 1];
+            } else {
+                # Already at final job
+                return undef;
+            }
+        }
+    }
+    
+    # Current job not found in path, return first job
+    return $path[1]; # Skip novice, return first job change
+}
+
+# Check if current job is part of target class progression
+sub isJobInProgression {
+    my ($target_class, $job_to_check) = @_;
+    return 0 unless $target_class && $job_to_check;
+    
+    $target_class = lc($target_class);
+    $job_to_check = lc($job_to_check);
+    
+    return 0 unless exists $job_progression{$target_class};
+    
+    my @path = @{$job_progression{$target_class}->{path}};
+    return grep { $_ eq $job_to_check } @path;
+}
+
+# Get first job for target class (for novice job change)
+sub getFirstJob {
+    my $target_class = shift;
+    return unless $target_class;
+    
+    $target_class = lc($target_class);
+    return unless exists $job_progression{$target_class};
+    
+    return $job_progression{$target_class}->{first_job};
+}
+
+# Get job change dialogue option (r0-r6) for a job
+sub getJobDialogueOption {
+    my $job_name = shift;
+    return unless $job_name;
+    
+    $job_name = lc($job_name);
+    
+    my %dialogue_options = (
+        'leave' => 0,
+        'swordsman' => 1,
+        'mage' => 2,
+        'archer' => 3,
+        'merchant' => 4,
+        'thief' => 5,
+        'acolyte' => 6
+    );
+    
+    return $dialogue_options{$job_name};
 }
 
 1; 

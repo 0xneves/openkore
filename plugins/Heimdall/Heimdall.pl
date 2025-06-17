@@ -108,6 +108,7 @@ sub onMainLoop {
     # Core automation logic
     Heimdall::TutorialManager::tutorialShip();
     Heimdall::TutorialManager::tutorialIsland();
+    Heimdall::TutorialManager::tutorialFirstJob();
 
     $timeout = time;
 }

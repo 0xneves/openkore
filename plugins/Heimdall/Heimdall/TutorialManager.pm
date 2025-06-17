@@ -8,6 +8,8 @@ use AI qw(ai_route);
 use Heimdall::ResourceManager;
 use Heimdall::ConfigManager;
 use Heimdall::QuestManager;
+use Heimdall::CombatManager;
+use Heimdall::LevelingManager;
 
 # Plugin name for consistent logging
 my $plugin_name = 'Heimdall::TutorialManager';
@@ -164,6 +166,142 @@ sub captainDialogue {
         # Set config flag as backup for future reference
         Heimdall::ConfigManager::setConfig('captain_quest_accepted', 1);
     }
+}
+
+# Tutorial First Job function - handles getting to job level 10 and skill allocation
+sub tutorialFirstJob {
+    return unless $char;
+    return unless $field; # Safety check - field must be loaded
+    
+    message "[" . $plugin_name . "] Checking first job requirements\n", "info";
+
+    # Check if current job is Novice (job ID 0)
+    if ($char->{jobID} != 0) {
+        message "[" . $plugin_name . "] Current job is not Novice (jobID: $char->{jobID}) - skipping Tutorial\n", "info";
+        return;
+    }
+    
+    # Check if we have skill points to allocate
+    if ($char->{points_skill} && $char->{points_skill} > 0) {
+        message "[" . $plugin_name . "] Found $char->{points_skill} skill points - allocating to Basic Skill\n", "success";
+        allocateBasicSkill();
+    }
+    
+    # Check if job level is less than 10
+    if ($char->{lv_job} && $char->{lv_job} < 10) {
+        message "[" . $plugin_name . "] Job level is $char->{lv_job}/10 - need to level up\n", "info";
+        
+        # Check if we're already in the training map
+        my $current_map = $field->baseName;
+        my $training_map = "prt_fild08";
+        
+        if ($current_map eq $training_map) {
+            # We're in the training map, start hunting
+            message "[" . $plugin_name . "] Already in $training_map - starting monster hunting\n", "success";
+            Heimdall::CombatManager::huntMonsters();
+        } else {
+            # Move to training map
+            message "[" . $plugin_name . "] Moving to training map: $training_map\n", "info";
+            main::ai_route($training_map, undef, undef);
+        }
+    } else {
+        message "[" . $plugin_name . "] Job level requirement met ($char->{lv_job}/10) - ready for job change\n", "success";
+        changeToFirstJob();
+    }
+}
+
+# Allocate skill points to Basic Skill (ID #1)
+sub allocateBasicSkill {
+    return unless $char;
+    return unless $char->{points_skill} && $char->{points_skill} > 0;
+    
+    my $basic_skill_id = 1; # Basic Skill ID
+    my $available_points = $char->{points_skill};
+    
+    message "[" . $plugin_name . "] Allocating $available_points skill points to Basic Skill (ID: $basic_skill_id)\n", "info";
+    
+    # Allocate all available skill points to Basic Skill
+    for my $i (1..$available_points) {
+        $messageSender->sendAddSkillPoint($basic_skill_id);
+        message "[" . $plugin_name . "] Allocated skill point $i/$available_points to Basic Skill\n", "info";
+    }
+}
+
+# Dynamic job change via Valquiria NPC in Izlude
+sub changeToFirstJob {
+    return unless $char;
+    return unless $field;
+    
+    # Get target class from config
+    my $target_class = Heimdall::ConfigManager::getConfig('job_class');
+    
+    # Get the next job in progression
+    my $next_job = Heimdall::LevelingManager::getFirstJob($target_class);
+    
+    if (!$next_job) {
+        message "[" . $plugin_name . "] No next job found for target class: $target_class\n", "error";
+        return;
+    }
+    
+    # Get dialogue option for the job
+    my $job_option = Heimdall::LevelingManager::getJobDialogueOption($next_job);
+    
+    if (!defined $job_option) {
+        message "[" . $plugin_name . "] No dialogue option found for job: $next_job\n", "error";
+        return;
+    }
+    
+    message "[" . $plugin_name . "] Target class: $target_class, Next job: $next_job, Option: r$job_option\n", "info";
+    
+    # Valquiria NPC coordinates in Izlude
+    my $npc_x = 122;
+    my $npc_y = 149;
+    my $izlude_map = "izlude";
+    
+    # Check if we're in Izlude
+    my $current_map = $field->baseName;
+    
+    if ($current_map ne $izlude_map) {
+        # Move to Izlude
+        message "[" . $plugin_name . "] Moving to Izlude for job change\n", "info";
+        main::ai_route($izlude_map, undef, undef);
+        return;
+    }
+    
+    # We're in Izlude, check if we're close to the NPC
+    my $char_x = $char->{pos_to}{x};
+    my $char_y = $char->{pos_to}{y};
+    my $distance = abs($char_x - $npc_x) + abs($char_y - $npc_y);
+    
+    if ($distance > 2) {
+        # Move closer to Valquiria NPC
+        message "[" . $plugin_name . "] Moving to Valquiria NPC at ($npc_x, $npc_y)\n", "info";
+        main::ai_route($izlude_map, $npc_x, $npc_y);
+        return;
+    }
+    
+    # Close any existing NPC dialogue first
+    if (Heimdall::QuestManager::closeNPCDialogue()) {
+        message "[" . $plugin_name . "] Closed existing dialogue, will retry Valquiria in next cycle\n", "info";
+        return;
+    }
+    
+    # We're close enough, start job change dialogue
+    message "[" . $plugin_name . "] Starting job change dialogue with Valquiria\n", "success";
+    
+    # Dynamic job change dialogue sequence: c r1 c r0 c c r{job_option} c
+    # Job options for reference:
+    # r0 = leave
+    # r1 = swordsman  
+    # r2 = mage
+    # r3 = archer
+    # r4 = merchant
+    # r5 = thief
+    # r6 = acolyte
+    my $dialogue_sequence = "c r1 c r0 c c r$job_option c";
+    main::ai_talkNPC($npc_x, $npc_y, $dialogue_sequence);
+    
+    message "[" . $plugin_name . "] Job change dialogue sent - changing to $next_job class (option r$job_option)\n", "success";
 }
 
 1; 

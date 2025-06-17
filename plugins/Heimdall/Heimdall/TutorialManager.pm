@@ -88,6 +88,12 @@ sub sailorDialogue {
     my $sailor_x = 58;
     my $sailor_y = 69;
     
+    # First, close any open NPC dialogue
+    if (Heimdall::QuestManager::closeNPCDialogue()) {
+        message "[" . $plugin_name . "] Closed existing dialogue, will retry Sailor in next cycle\n", "info";
+        return;  # Wait for next cycle to talk to Sailor
+    }
+    
     message "[" . $plugin_name . "] Attempting to talk to Sailor at ($sailor_x, $sailor_y)\n", "info";
     
     # Talk to NPC and send 3 continue responses
@@ -132,6 +138,12 @@ sub captainDialogue {
             $quest_accepted = 1;
             message "[" . $plugin_name . "] Quest $tutorial_quest_id is active - using second dialogue\n", "info";
         }
+    }
+    
+    # First, close any open NPC dialogue
+    if (Heimdall::QuestManager::closeNPCDialogue()) {
+        message "[" . $plugin_name . "] Closed existing dialogue, will retry Captain in next cycle\n", "info";
+        return;  # Wait for next cycle to talk to Captain
     }
     
     if ($quest_accepted) {

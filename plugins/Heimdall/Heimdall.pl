@@ -115,6 +115,9 @@ sub onMainLoop {
 # Load configuration on startup
 Heimdall::ConfigManager::loadConfig();
 
+# Configure NPC error handling
+Heimdall::QuestManager::configureNPCErrorHandling();
+
 # Initialize plugin
 message "[" . $plugin_name . "] Plugin v" . $plugin_version . " loaded successfully!\n", "success";
 

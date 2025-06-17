@@ -178,15 +178,20 @@ sub isMonsterReachable {
     message "2", "debug";
     # Create PathFinding object and reset with parameters
     my $pathfinding = new PathFinding();
+    message "2.1" . $char->{pos_to}, "debug";
+    message "2.2" . $monster->{pos_to}, "debug";
+    message "2.3" . $field, "debug";
+    message "2.3.1" . $field->baseName, "debug";
+    message "2.4" . $pathfinding, "debug";
     my $result = $pathfinding->reset(
         start => $char->{pos_to},
         dest => $monster->{pos_to},
         field => $field,
         avoidWalls => 1
     );
-    message "3", "debug";
+    message "3" . $result, "debug";
     return 0 unless $result; # reset failed
-    message "4", "debug";
+    message "4" . $result, "debug";
     # Try to calculate path to monster
     my @solution = ();
     my $path_result = $pathfinding->run(\@solution);

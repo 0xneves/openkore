@@ -16,84 +16,18 @@ sub onLevelUp {
     
     message "[" . $plugin_name . "] Level up detected! Free points: $char->{points_free}\n", "success";
     
-    # Get job class from config (default to "rogue")
-    my $job_class = Heimdall::ConfigManager::getConfig('job_class') || 'rogue';
+    # Get job class from config (default to "stalker")
+    my $job_class = Heimdall::ConfigManager::getConfig('job_class') || 'stalker';
     $job_class = lc($job_class); # Normalize to lowercase
     
     message "[" . $plugin_name . "] Current job class: $job_class\n", "info";
     
     # Distribute stats based on job class
-    if ($job_class eq 'rogue') {
-        distributeRogueStats();
-    } elsif ($job_class eq 'stalker') {
+    if ($job_class eq 'stalker') {
         distributeStalkerStats();
     } else {
-        message "[" . $plugin_name . "] Unknown job class '$job_class', defaulting to rogue build\n", "warning";
+        message "[" . $plugin_name . "] Unknown job class '$job_class', defaulting to stalker build\n", "warning";
         distributeRogueStats();
-    }
-}
-
-# Rogue stat distribution logic
-sub distributeRogueStats {
-    message "[" . $plugin_name . "] Distributing stats for Rogue build\n", "info";
-    
-    while ($char->{points_free} > 0) {
-        my $agi = $char->{str_bonus} + $char->{agi};
-        my $dex = $char->{str_bonus} + $char->{dex};
-        my $str = $char->{str_bonus} + $char->{str};
-        my $luk = $char->{str_bonus} + $char->{luk};
-        
-        my $success = 0;
-        
-        # Phase 1: AGI and DEX to 70 (alternating)
-        if ($agi < 70 || $dex < 70) {
-            if ($agi <= $dex && $agi < 70) {
-                $success = addStatPoint('agi');
-                message "[" . $plugin_name . "] Phase 1: AGI/DEX to 70 - AGI: $agi\n", "info" if $success;
-            } elsif ($dex < 70) {
-                $success = addStatPoint('dex');
-                message "[" . $plugin_name . "] Phase 1: AGI/DEX to 70 - DEX: $dex\n", "info" if $success;
-            } else {
-                # This shouldn't happen, but safety check
-                message "[" . $plugin_name . "] Phase 1 logic error - no stat to allocate\n", "error";
-                $success = 0;
-            }
-        }
-        # Phase 2: STR and LUK to 30 (alternating)
-        elsif ($str < 30 || $luk < 30) {
-            if ($str <= $luk && $str < 30) {
-                $success = addStatPoint('str');
-                message "[" . $plugin_name . "] Phase 2: STR/LUK to 30 - STR: $str\n", "info" if $success;
-            } elsif ($luk < 30) {
-                $success = addStatPoint('luk');
-                message "[" . $plugin_name . "] Phase 2: STR/LUK to 30 - LUK: $luk\n", "info" if $success;
-            } else {
-                # This shouldn't happen, but safety check
-                message "[" . $plugin_name . "] Phase 2 logic error - no stat to allocate\n", "error";
-                $success = 0;
-            }
-        }
-        # Phase 3: AGI to 99
-        elsif ($agi < 99) {
-            $success = addStatPoint('agi');
-            message "[" . $plugin_name . "] Phase 3: AGI to 99 - AGI: $agi\n", "info" if $success;
-        }
-        # Phase 4: DEX to 84
-        elsif ($dex < 84) {
-            $success = addStatPoint('dex');
-            message "[" . $plugin_name . "] Phase 4: DEX to 84 - DEX: $dex\n", "info" if $success;
-        }
-        # All stats complete for Rogue
-        else {
-            message "[" . $plugin_name . "] Rogue stat build complete! AGI: $agi, DEX: $dex, STR: $str, LUK: $luk\n", "success";
-            last;
-        }
-        
-        # Break if we couldn't allocate any points (not enough points for next stat)
-        if (!$success) {
-            message "[" . $plugin_name . "] Cannot allocate more stat points - insufficient points remaining\n", "warning";
-            last;
-        }
     }
 }
 
@@ -102,36 +36,64 @@ sub distributeStalkerStats {
     message "[" . $plugin_name . "] Distributing stats for Stalker build\n", "info";
     
     while ($char->{points_free} > 0) {
-        my $agi = $char->{str_bonus} + $char->{agi};
-        my $dex = $char->{str_bonus} + $char->{dex};
+        my $agi = $char->{agi_bonus} + $char->{agi};
+        my $dex = $char->{dex_bonus} + $char->{dex};
         my $str = $char->{str_bonus} + $char->{str};
-        my $luk = $char->{str_bonus} + $char->{luk};
-        my $vit = $char->{str_bonus} + $char->{vit};
+        my $luk = $char->{luk_bonus} + $char->{luk};
+        my $vit = $char->{vit_bonus} + $char->{vit};
         
         my $success = 0;
         
-        # Phase 1: AGI and DEX to 70 (same as Rogue)
+        # Phase 1: AGI and DEX to 70 (ping-pong between them)
         if ($agi < 70 || $dex < 70) {
-            if ($agi <= $dex && $agi < 70) {
+            if ($agi < $dex && $agi < 70) {
+                # AGI is lower, increase AGI
                 $success = addStatPoint('agi');
-                message "[" . $plugin_name . "] Phase 1: AGI/DEX to 70 - AGI: $agi\n", "info" if $success;
-            } elsif ($dex < 70) {
+                message "[" . $plugin_name . "] Phase 1: AGI/DEX to 70 - Increasing AGI (was lower): $agi -> " . ($agi + 1) . "\n", "info" if $success;
+            } elsif ($dex < $agi && $dex < 70) {
+                # DEX is lower, increase DEX
                 $success = addStatPoint('dex');
-                message "[" . $plugin_name . "] Phase 1: AGI/DEX to 70 - DEX: $dex\n", "info" if $success;
+                message "[" . $plugin_name . "] Phase 1: AGI/DEX to 70 - Increasing DEX (was lower): $dex -> " . ($dex + 1) . "\n", "info" if $success;
+            } elsif ($agi == $dex && $agi < 70) {
+                # They're equal, alternate (prefer AGI first when tied)
+                $success = addStatPoint('agi');
+                message "[" . $plugin_name . "] Phase 1: AGI/DEX to 70 - Equal stats, increasing AGI: $agi -> " . ($agi + 1) . "\n", "info" if $success;
+            } elsif ($agi < 70) {
+                # Only AGI needs more points
+                $success = addStatPoint('agi');
+                message "[" . $plugin_name . "] Phase 1: AGI/DEX to 70 - Finishing AGI: $agi -> " . ($agi + 1) . "\n", "info" if $success;
+            } elsif ($dex < 70) {
+                # Only DEX needs more points
+                $success = addStatPoint('dex');
+                message "[" . $plugin_name . "] Phase 1: AGI/DEX to 70 - Finishing DEX: $dex -> " . ($dex + 1) . "\n", "info" if $success;
             } else {
                 # This shouldn't happen, but safety check
                 message "[" . $plugin_name . "] Phase 1 logic error - no stat to allocate\n", "error";
                 $success = 0;
             }
         }
-        # Phase 2: STR and LUK to 30 (same as Rogue)
+        # Phase 2: STR and LUK to 30 (ping-pong between them)
         elsif ($str < 30 || $luk < 30) {
-            if ($str <= $luk && $str < 30) {
+            if ($str < $luk && $str < 30) {
+                # STR is lower, increase STR
                 $success = addStatPoint('str');
-                message "[" . $plugin_name . "] Phase 2: STR/LUK to 30 - STR: $str\n", "info" if $success;
-            } elsif ($luk < 30) {
+                message "[" . $plugin_name . "] Phase 2: STR/LUK to 30 - Increasing STR (was lower): $str -> " . ($str + 1) . "\n", "info" if $success;
+            } elsif ($luk < $str && $luk < 30) {
+                # LUK is lower, increase LUK
                 $success = addStatPoint('luk');
-                message "[" . $plugin_name . "] Phase 2: STR/LUK to 30 - LUK: $luk\n", "info" if $success;
+                message "[" . $plugin_name . "] Phase 2: STR/LUK to 30 - Increasing LUK (was lower): $luk -> " . ($luk + 1) . "\n", "info" if $success;
+            } elsif ($str == $luk && $str < 30) {
+                # They're equal, alternate (prefer STR first when tied)
+                $success = addStatPoint('str');
+                message "[" . $plugin_name . "] Phase 2: STR/LUK to 30 - Equal stats, increasing STR: $str -> " . ($str + 1) . "\n", "info" if $success;
+            } elsif ($str < 30) {
+                # Only STR needs more points
+                $success = addStatPoint('str');
+                message "[" . $plugin_name . "] Phase 2: STR/LUK to 30 - Finishing STR: $str -> " . ($str + 1) . "\n", "info" if $success;
+            } elsif ($luk < 30) {
+                # Only LUK needs more points
+                $success = addStatPoint('luk');
+                message "[" . $plugin_name . "] Phase 2: STR/LUK to 30 - Finishing LUK: $luk -> " . ($luk + 1) . "\n", "info" if $success;
             } else {
                 # This shouldn't happen, but safety check
                 message "[" . $plugin_name . "] Phase 2 logic error - no stat to allocate\n", "error";
@@ -191,7 +153,9 @@ sub addStatPoint {
     }
     
     # Calculate the cost to increase this stat
-    my $current_stat = $char->{str_bonus} + $char->{lc($stat)};
+    my $stat_name = lc($stat);
+    my $bonus_field = $stat_name . '_bonus';
+    my $current_stat = $char->{$bonus_field} + $char->{$stat_name};
     my $cost = getStatCost($current_stat);
     
     # Check if we have enough points
@@ -241,12 +205,12 @@ sub getStatCost {
 sub getStatSummary {
     return unless $char;
     
-    my $agi = $char->{str_bonus} + $char->{agi};
-    my $dex = $char->{str_bonus} + $char->{dex};
+    my $agi = $char->{agi_bonus} + $char->{agi};
+    my $dex = $char->{dex_bonus} + $char->{dex};
     my $str = $char->{str_bonus} + $char->{str};
-    my $luk = $char->{str_bonus} + $char->{luk};
-    my $vit = $char->{str_bonus} + $char->{vit};
-    my $int = $char->{str_bonus} + $char->{int};
+    my $luk = $char->{luk_bonus} + $char->{luk};
+    my $vit = $char->{vit_bonus} + $char->{vit};
+    my $int = $char->{int_bonus} + $char->{int};
     
     return "STR: $str, AGI: $agi, VIT: $vit, INT: $int, DEX: $dex, LUK: $luk (Free: $char->{points_free})";
 }

@@ -1,6 +1,12 @@
 # Heimdall Plugin Configuration
 # Ideally you shouldn't touch in this file.
 
+#######################
+#### Job - Target ####
+#######################
+
+job_class stalker
+
 ##########################
 #### Health - Potions ####
 ##########################

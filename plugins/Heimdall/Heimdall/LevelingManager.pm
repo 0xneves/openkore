@@ -79,14 +79,14 @@ my %job_id_map = (
 # Reverse job ID mapping - maps job IDs to job names
 my %job_name_map = reverse %job_id_map;
 
-# Handle level up event and distribute stat points
+# Handle level up event and distribute stat points (immediate response)
 sub onLevelUp {
     return unless $char;
     return unless $char->{points_free} && $char->{points_free} > 0;
     
     message "[" . $plugin_name . "] Level up detected! Free points: $char->{points_free}\n", "success";
     
-    # Get job class from config (default to "stalker")
+    # Get job class from config
     my $job_class = Heimdall::ConfigManager::getConfig('job_class');
     $job_class = lc($job_class); # Normalize to lowercase
     
@@ -97,7 +97,36 @@ sub onLevelUp {
         distributeStalkerStats();
     } else {
         message "[" . $plugin_name . "] Unknown job class '$job_class', defaulting to stalker build\n", "warning";
-        distributeRogueStats();
+        distributeStalkerStats(); # Default to stalker instead of undefined function
+    }
+}
+
+# Main loop safety check - handles missed points and skill allocation
+sub checkStatsAndSkills {
+    return unless $char;
+    
+    # Check for accumulated stat points (7+ points means we missed some allocations)
+    if ($char->{points_free} && $char->{points_free} >= 7) {
+        message "[" . $plugin_name . "] Safety check: Found $char->{points_free} unallocated stat points\n", "warning";
+        
+        # Get job class and distribute stats
+        my $job_class = Heimdall::ConfigManager::getConfig('job_class');
+        $job_class = lc($job_class); # Normalize to lowercase
+        
+        if ($job_class eq 'stalker') {
+            distributeStalkerStats();
+        } else {
+            distributeStalkerStats(); # Default to stalker
+        }
+    }
+    
+    # Check for skill points (any amount > 0)
+    if ($char->{points_skill} && $char->{points_skill} > 0) {
+        # Only allocate skill points for Novice class
+        if ($char->{jobID} == 0) {
+            message "[" . $plugin_name . "] Safety check: Found $char->{points_skill} unallocated skill points (Novice)\n", "info";
+            allocateBasicSkill();
+        }
     }
 }
 
@@ -359,6 +388,24 @@ sub getJobDialogueOption {
     );
     
     return $dialogue_options{$job_name};
+}
+
+# Allocate skill points to Basic Skill (ID #1) for Novice characters
+sub allocateBasicSkill {
+    return unless $char;
+    return unless $char->{points_skill} && $char->{points_skill} > 0;
+    return unless $char->{jobID} == 0; # Only for Novice
+    
+    my $basic_skill_id = 1; # Basic Skill ID
+    my $available_points = $char->{points_skill};
+    
+    message "[" . $plugin_name . "] Allocating $available_points skill points to Basic Skill (ID: $basic_skill_id)\n", "info";
+    
+    # Allocate all available skill points to Basic Skill
+    for my $i (1..$available_points) {
+        $messageSender->sendAddSkillPoint($basic_skill_id);
+        message "[" . $plugin_name . "] Allocated skill point $i/$available_points to Basic Skill\n", "debug";
+    }
 }
 
 1; 

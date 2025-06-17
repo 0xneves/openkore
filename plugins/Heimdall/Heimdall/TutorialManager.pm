@@ -181,7 +181,7 @@ sub tutorialFirstJob {
     
     # Check if we have skill points to allocate
     if ($char->{points_skill} && $char->{points_skill} > 0) {
-        allocateBasicSkill();
+        Heimdall::LevelingManager::allocateBasicSkill();
     }
     
     # Check if job level is less than 10
@@ -204,22 +204,7 @@ sub tutorialFirstJob {
     }
 }
 
-# Allocate skill points to Basic Skill (ID #1)
-sub allocateBasicSkill {
-    return unless $char;
-    return unless $char->{points_skill} && $char->{points_skill} > 0;
-    
-    my $basic_skill_id = 1; # Basic Skill ID
-    my $available_points = $char->{points_skill};
-    
-    message "[" . $plugin_name . "] Allocating $available_points skill points to Basic Skill (ID: $basic_skill_id)\n", "info";
-    
-    # Allocate all available skill points to Basic Skill
-    for my $i (1..$available_points) {
-        $messageSender->sendAddSkillPoint($basic_skill_id);
-        message "[" . $plugin_name . "] Allocated skill point $i/$available_points to Basic Skill\n", "info";
-    }
-}
+
 
 # Dynamic job change via Valquiria NPC in Izlude
 sub changeToFirstJob {

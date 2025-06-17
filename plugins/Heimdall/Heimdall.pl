@@ -103,12 +103,15 @@ sub onQuestDeleted {
 # Main loop - core automation logic
 sub onMainLoop {
     return unless $net && $net->getState() == Network::IN_GAME;
-    return unless timeOut($timeout, 1); # Check every 1 seconds
+    return unless timeOut($timeout, 3); # Check every 3 seconds
     
     # Core automation logic
     Heimdall::TutorialManager::tutorialShip();
     Heimdall::TutorialManager::tutorialIsland();
     Heimdall::TutorialManager::tutorialFirstJob();
+    
+    # Safety checks for stats and skills
+    Heimdall::LevelingManager::checkStatsAndSkills();
 
     $timeout = time;
 }

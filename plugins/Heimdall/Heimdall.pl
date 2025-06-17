@@ -86,7 +86,7 @@ sub tutorial {
     } elsif ($char_x > 28) {
         # If X is greater than 28, move to int_land (56, 15)
         message "[" . $plugin_name . "] X=$char_x > 28, moving to int_land (56,15)\n", "success";
-        ai_route("int_land", 56, 15);
+        ai_route("iz_int", 56, 15);
     }
 }
 

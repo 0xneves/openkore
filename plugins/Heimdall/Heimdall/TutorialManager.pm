@@ -141,7 +141,7 @@ sub captainDialogue {
     } else {
         # First time - accept quest (response 0 + 7 continues)
         message "[" . $plugin_name . "] Starting first dialogue with Captain (accept + 7 continues)\n", "info";
-        main::ai_talkNPC($captain_x, $captain_y, "n n n n n n n n");
+        main::ai_talkNPC($captain_x, $captain_y, "r0 n n n n n n n");
         
         # Set config flag as backup for future reference
         Heimdall::ConfigManager::setConfig('captain_quest_accepted', 1);

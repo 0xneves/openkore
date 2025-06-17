@@ -70,9 +70,11 @@ sub onMainLoop {
     return unless timeOut($timeout, 10); # Check every 10 seconds
     
     # Core automation logic (no HP checking here anymore)
+    message "[" . $plugin_name . "] Entering tutorialShip\n", "success";
     tutorialShip();
+    message "[" . $plugin_name . "] Entering tutorialIsland\n", "success";
     tutorialIsland();
-    
+
     $timeout = time;
 }
 
@@ -110,12 +112,18 @@ sub tutorialShip {
 sub tutorialIsland {
     return unless $char;
     return unless $field; # Safety check - field must be loaded
+
+    message "[" . $plugin_name . "] Entering tutorialIsland after char and field are loaded\n", "success";
     
     my $current_map = $field->baseName;
     return unless $current_map; # Extra safety - map name must exist
+
+    message "[" . $plugin_name . "] Current map: $current_map\n", "success";
     
     my $tutorial_map = "int_land";
     return unless $current_map eq $tutorial_map; # Exit if not in tutorial island map
+
+    message "[" . $plugin_name . "] tutorial_map: $tutorial_map\n", "success";
     
     # Check if character has Blessing buff
     if (!$char->statusActive('Blessing')) {

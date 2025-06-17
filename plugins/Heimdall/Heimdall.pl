@@ -11,7 +11,7 @@ use warnings;
 use Plugins;
 use Globals qw($char %config $net $messageSender $field);
 use Log qw(message);
-use Commands;
+use AI qw(ai_route);
 use Utils qw(timeOut);
 
 # Plugin information
@@ -69,9 +69,24 @@ sub tutorial {
     return unless $current_map; # Extra safety - map name must exist
     
     my $tutorial_map = "iz_int";
+    return unless $current_map eq $tutorial_map; # Exit if not in tutorial map
     
-    if ($current_map eq $tutorial_map) {
-        useItemIfExists(23937); # Caixa de Jornada
+    # Use Caixa de Jornada if available
+    useItemIfExists(23937); # Caixa de Jornada
+    
+    # Get current character position
+    my $char_x = $char->{pos_to}{x};
+    my $char_y = $char->{pos_to}{y};
+    
+    # Conditional movement based on X coordinate
+    if ($char_x < 28) {
+        # If X is less than 28, move to portal at (27, 30)
+        message "[" . $plugin_name . "] X=$char_x < 28, moving to portal (27,30)\n", "success";
+        ai_route($field->baseName, 27, 30);
+    } elsif ($char_x > 28) {
+        # If X is greater than 28, move to int_land (56, 15)
+        message "[" . $plugin_name . "] X=$char_x > 28, moving to int_land (56,15)\n", "success";
+        ai_route("int_land", 56, 15);
     }
 }
 

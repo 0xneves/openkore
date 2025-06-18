@@ -46,6 +46,7 @@ my $hooks = Plugins::addHooks(
     ['packet/hp_sp_changed', \&onHPChanged],    # When HP/SP changes (damage taken)
     ['mainLoop_pre', \&onMainLoop],             # Main loop
     ['quest_delete', \&onQuestDeleted],         # When a quest is completed/deleted
+    ['npc_talk_done', \&onNpcTalkDone],         # When NPC dialogue ends
 );
 
 # Called when map is fully loaded
@@ -65,6 +66,7 @@ sub onReload {
         ['packet/hp_sp_changed', \&onHPChanged],    # When HP/SP changes (damage taken)
         ['mainLoop_pre', \&onMainLoop],             # Main loop
         ['quest_delete', \&onQuestDeleted],         # When a quest is completed/deleted
+        ['npc_talk_done', \&onNpcTalkDone],         # When NPC dialogue ends
     );
     
     # Reset timeout and call main loop immediately
@@ -183,6 +185,17 @@ sub onQuestDeleted {
     
     # Call the QuestManager to handle quest completion
     Heimdall::QuestManager::onQuestDeleted($args);
+}
+
+# Called when NPC dialogue ends
+sub onNpcTalkDone {
+    my $args = shift;
+    
+    # Check if we were waiting for dialogue completion
+    if (Heimdall::StateManager::isChatBusy()) {
+        Heimdall::StateManager::setChatNotBusy();
+        message "[" . $plugin_name . "] NPC dialogue completed - chat no longer busy\n", "success";
+    }
 }
 
 # Main loop - core automation logic

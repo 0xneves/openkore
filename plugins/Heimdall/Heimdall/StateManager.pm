@@ -9,9 +9,23 @@ use Commands;
 # Plugin name for consistent logging
 my $plugin_name = 'Heimdall::StateManager';
 
-# Simple state tracking
+# Respawn handling
 my $is_alive = 1;
 my $last_death_time = 0;
+
+# Job change handling
+my $chat_is_busy = 0;
+
+# Chat busy handling
+sub setChatBusy {
+    $chat_is_busy = 1;
+}
+sub setChatNotBusy {
+    $chat_is_busy = 0;
+}
+sub isChatBusy {
+    return $chat_is_busy;
+}
 
 # Check if character is alive
 sub isAlive {

@@ -198,8 +198,9 @@ sub tutorialFirstJob {
             return if Heimdall::CombatManager::isAIBusy();
             main::ai_route($training_map, undef, undef);
         }
-    } else {
-        message "[" . $plugin_name . "] Job level requirement met ($char->{lv_job}/10) - ready for job change\n", "success";
+    } else if(!Heimdall::StateManager::isChatBusy()) {
+        # Close any existing NPC dialogue first
+        Heimdall::QuestManager::closeNPCDialogue();
         changeToFirstJob();
     }
 }
@@ -213,6 +214,7 @@ sub changeToFirstJob {
     
     # Get target class from config
     my $target_class = Heimdall::ConfigManager::getConfig('job_class');
+    message "[" . $plugin_name . "] Job change in progress... PATH = " . uc($target_class) . "\n", "success";
     
     # Get the next job in progression
     my $next_job = Heimdall::LevelingManager::getFirstJob($target_class);
@@ -239,8 +241,6 @@ sub changeToFirstJob {
     my $current_map = $field->baseName;
     
     if ($current_map ne $izlude_map) {
-        # Move to Izlude
-        return if Heimdall::CombatManager::isAIBusy();
         main::ai_route($izlude_map, undef, undef);
         return;
     }
@@ -251,14 +251,7 @@ sub changeToFirstJob {
     my $distance = abs($char_x - $npc_x) + abs($char_y - $npc_y);
     
     if ($distance > 2) {
-        # Move closer to Valquiria NPC
-        return if Heimdall::CombatManager::isAIBusy();
         main::ai_route($izlude_map, $npc_x, $npc_y);
-        return;
-    }
-    
-    # Close any existing NPC dialogue first
-    if (Heimdall::QuestManager::closeNPCDialogue()) {
         return;
     }
     
@@ -271,10 +264,13 @@ sub changeToFirstJob {
     # r4 = merchant
     # r5 = thief
     # r6 = acolyte
-    my $dialogue_sequence = "c r1 c r0 c c r$job_option c";
-    main::ai_talkNPC($npc_x, $npc_y, $dialogue_sequence);
-    
-    message "[" . $plugin_name . "] Job change dialogue sent - changing to $next_job class (option r$job_option)\n", "success";
+    if (!Heimdall::CombatManager::isAIBusy() && !Heimdall::StateManager::isChatBusy()) {
+        Heimdall::StateManager::setChatBusy();
+        my $dialogue_sequence = "c r1 c r0 c c r$job_option c";
+        main::ai_talkNPC($npc_x, $npc_y, $dialogue_sequence);
+        Heimdall::StateManager::setChatNotBusy();
+        message "[" . $plugin_name . "] Job change dialogue sent - changing to $next_job class\n", "success";
+    }
 }
 
 1; 

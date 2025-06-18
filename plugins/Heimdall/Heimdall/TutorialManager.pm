@@ -198,7 +198,7 @@ sub tutorialFirstJob {
             return if Heimdall::CombatManager::isAIBusy();
             main::ai_route($training_map, undef, undef);
         }
-    } else if(!Heimdall::StateManager::isChatBusy()) {
+    } elsif (!Heimdall::StateManager::isChatBusy()) {
         # Close any existing NPC dialogue first
         Heimdall::QuestManager::closeNPCDialogue();
         changeToFirstJob();

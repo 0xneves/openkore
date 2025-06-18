@@ -2,7 +2,7 @@ package Heimdall::CombatManager;
 
 use strict;
 use warnings;
-use Globals qw($char $monstersList $field @monstersID);
+use Globals qw($char $monstersList $field @monstersID $itemsList @itemsID);
 use Log qw(message);
 use Utils qw(distance);
 use AI;
@@ -117,7 +117,16 @@ sub huntMonsters {
     return unless $char;
     return unless $field;
     
-    # First priority: Check for nearby monsters to attack
+    # Top priority: Check for nearby items to pick up
+    my $nearby_item = getNearbyItem();
+    if ($nearby_item) {
+        # Found item - pick it up
+        message "[" . $plugin_name . "] Picking up item: " . ($nearby_item->{name} || 'Unknown') . "\n", "info";
+        main::take($nearby_item->{ID});
+        return;
+    }
+    
+    # Second priority: Check for nearby monsters to attack
     my $nearby_monster_id = getBestTarget(\@monstersID, 1, 0);
     if ($nearby_monster_id) {
         # Get monster object to check if we should avoid it
@@ -243,6 +252,28 @@ sub hasReachedDestination {
     }
     
     return 0;
+}
+
+# Get nearby item to pick up
+sub getNearbyItem {
+    return unless $char && $itemsList;
+    
+    my $max_distance = 5; # Maximum distance to consider an item "nearby"
+    
+    for my $item (@{$itemsList->getItems()}) {
+        next unless $item;
+        next unless $item->{pos};
+        
+        # Calculate distance to item
+        my $item_distance = distance($char->{pos_to}, $item->{pos});
+        
+        if ($item_distance <= $max_distance) {
+            # Found nearby item
+            return $item;
+        }
+    }
+    
+    return undef; # No nearby items found
 }
 
 # Reset hunting state (useful for map changes or manual resets)

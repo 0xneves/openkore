@@ -18,6 +18,9 @@ our $initial_weight;
 sub startJourney {
     return unless $char;
     
+    # First thing - equip weapons if unequipped (after job change)
+    equipWeapon();
+    
     # Get current zeny amount
     my $current_zeny = $char->{zeny} || 0;
     my $target_zeny = 120; # Minimum zeny needed for Payon trip
@@ -204,6 +207,26 @@ sub goToPayon {
     }
     
     return 0;
+}
+
+# Equip weapon and armor if unequipped (after job change)
+sub equipWeapon {
+    return unless $char;
+    
+    # Item IDs to equip
+    my @items_to_equip = (1201, 2301);  # 1201 = weapon, 2301 = armor
+    
+    for my $item_id (@items_to_equip) {
+        # Find item in inventory
+        my $item = $char->inventory->getByNameID($item_id);
+        next unless $item;
+        
+        # Check if item is not equipped
+        if (!$item->{equipped}) {
+            message "[" . $plugin_name . "] Equipping $item->{name} (ID: $item_id)\n", "info";
+            $item->equip();
+        }
+    }
 }
 
 1; 

@@ -85,8 +85,6 @@ sub checkStatsAndSkills {
     
     # Check for accumulated stat points (12+ points means we should allocate)
     if ($char->{points_free} && $char->{points_free} >= 12) {
-        message "[" . $plugin_name . "] Safety check: Found $char->{points_free} unallocated stat points\n", "warning";
-        
         # Get job class and distribute stats
         my $job_class = Heimdall::ConfigManager::getConfig('job_class');
         $job_class = lc($job_class); # Normalize to lowercase

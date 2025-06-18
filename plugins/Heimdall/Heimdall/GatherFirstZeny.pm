@@ -159,18 +159,18 @@ sub goToPayon {
     my $current_map = $field->baseName;
     my $izlude_map = "izlude";
 
-    # Step 2: Go to Kafra in Izlude
+    # Step 1: Go to Kafra in Izlude
     my $kafra_x = 128;  # Kafra coordinates in Izlude
     my $kafra_y = 148;
 
-    # Step 1: Move to Izlude if not there
+    # Step 2: Move to Izlude if not there
     if ($current_map ne $izlude_map) {
         message "[" . $plugin_name . "] Moving to Izlude to use Kafra teleport\n", "info";
         main::ai_route($izlude_map, $kafra_x, $kafra_y);
         return 0;
     }
     
-    # Check if we're close to Kafra
+    # Step 3: Check if we're close to Kafra
     my $char_x = $char->{pos_to}{x};
     my $char_y = $char->{pos_to}{y};
     my $distance = abs($char_x - $kafra_x) + abs($char_y - $kafra_y);
@@ -181,7 +181,7 @@ sub goToPayon {
         return 0;
     }
     
-    # Step 3: Check if we're in Payon already
+    # Step 4: Check if we're in Payon already
     if ($current_map eq "payon") {
         # We're in Payon - check if save point is already set to payon
         my $current_save_point = Heimdall::ConfigManager::getConfig('kafra_save_point');
@@ -197,7 +197,7 @@ sub goToPayon {
         return 1; # Mission accomplished
     }
     
-    # Step 4: Talk to Kafra for teleport service
+    # Step 5: Talk to Kafra for teleport service
     if (defined $ai_v{'npc_talk'} && $ai_v{'npc_talk'}{'talk'} eq 'select') {
         # In Kafra menu - select teleport service
         message "[" . $plugin_name . "] Selecting teleport service\n", "info";

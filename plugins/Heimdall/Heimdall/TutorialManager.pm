@@ -264,7 +264,7 @@ sub changeToFirstJob {
     # r6 = acolyte
     if (!Heimdall::CombatManager::isAIBusy() && !Heimdall::StateManager::isChatBusy()) {
         Heimdall::StateManager::setChatBusy();
-        my $dialogue_sequence = "r1 r0 c r0 c";
+        my $dialogue_sequence = "r1 r0 c r$job_option c";
         main::ai_talkNPC($npc_x, $npc_y, $dialogue_sequence);
         message "[" . $plugin_name . "] Job change dialogue sent - changing to $next_job class\n", "success";
         # Note: setChatNotBusy() will be called automatically when NPC dialogue ends via hook

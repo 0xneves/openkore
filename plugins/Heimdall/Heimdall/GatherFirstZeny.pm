@@ -158,17 +158,17 @@ sub goToPayon {
     
     my $current_map = $field->baseName;
     my $izlude_map = "izlude";
-    
-    # Step 1: Move to Izlude if not there
-    if ($current_map ne $izlude_map) {
-        message "[" . $plugin_name . "] Moving to Izlude to use Kafra teleport\n", "info";
-        main::ai_route($izlude_map, undef, undef);
-        return 0;
-    }
-    
+
     # Step 2: Go to Kafra in Izlude
     my $kafra_x = 128;  # Kafra coordinates in Izlude
     my $kafra_y = 148;
+
+    # Step 1: Move to Izlude if not there
+    if ($current_map ne $izlude_map) {
+        message "[" . $plugin_name . "] Moving to Izlude to use Kafra teleport\n", "info";
+        main::ai_route($izlude_map, kafra_x, kafra_y);
+        return 0;
+    }
     
     # Check if we're close to Kafra
     my $char_x = $char->{pos_to}{x};

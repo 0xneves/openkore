@@ -2,7 +2,7 @@ package Heimdall::GatherFirstZeny;
 
 use strict;
 use warnings;
-use Globals qw($char $field $ai_v);
+use Globals qw($char $field %ai_v);
 use Log qw(message);
 use Misc qw(completeNpcSell cancelNpcBuySell);
 use Heimdall::CombatManager;

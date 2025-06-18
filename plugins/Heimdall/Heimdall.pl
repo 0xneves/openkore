@@ -208,6 +208,9 @@ sub onMainLoop {
     # Manage character state (death/respawn)
     Heimdall::StateManager::manageCharacterState();
     
+    # Always check HP in main loop (important for respawn situations)
+    Heimdall::CombatManager::checkHP();
+    
     # Safety checks for stats and skills
     Heimdall::LevelingManager::checkStatsAndSkills();
 

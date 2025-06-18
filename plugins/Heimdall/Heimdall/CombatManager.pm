@@ -118,18 +118,25 @@ sub huntMonsters {
     return unless $field;
     
     # First priority: Check for nearby monsters to attack
-    my $nearby_monster = getBestTarget(\@monstersID, 1, 0);
-    if ($nearby_monster) {
-        # Found a monster - enter hunting mode
-        if ($hunting_mode eq 'routing') {
-            # Cancel current route to attack monster
-            AI::clear("route");
-            message "[" . $plugin_name . "] Cancelling route to attack nearby monster\n", "info";
+    my $nearby_monster_id = getBestTarget(\@monstersID, 1, 0);
+    if ($nearby_monster_id) {
+        # Get monster object to check if we should avoid it
+        my $monster_obj = $monstersList->getByID($nearby_monster_id);
+        if ($monster_obj && shouldAvoidMonster($monster_obj)) {
+            # Monster should be avoided - skip attacking
+            message "[" . $plugin_name . "] Skipping monster " . $monster_obj->name . " - marked for avoidance\n", "debug";
+        } else {
+            # Found a monster - enter hunting mode
+            if ($hunting_mode eq 'routing') {
+                # Cancel current route to attack monster
+                AI::clear("route");
+                message "[" . $plugin_name . "] Cancelling route to attack nearby monster\n", "info";
+            }
+            
+            $hunting_mode = 'hunting';
+            attackMonster($nearby_monster_id);
+            return;
         }
-        
-        $hunting_mode = 'hunting';
-        attackMonster($nearby_monster);
-        return;
     }
     
     # No nearby monsters - handle routing logic

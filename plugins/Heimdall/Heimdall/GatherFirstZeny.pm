@@ -29,7 +29,7 @@ sub startJourney {
     # Initialize weight tracking if not set
     message "[" . $plugin_name . "] Weight: $char->{weight}\n", "info";
     message "[" . $plugin_name . "] Initial weight: $initial_weight\n", "info";
-    if (!defined $initial_weight) {
+    if (!defined $initial_weight || $initial_weight == 0) {
         $initial_weight = $char->{weight} || 0;
         message "[" . $plugin_name . "] Starting weight tracking: $initial_weight\n", "info";
     }

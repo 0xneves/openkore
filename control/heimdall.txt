@@ -29,3 +29,10 @@ has_jornada 10
 
 # Has completed the first quest on Tutorial Island (0 = false, 1 = true)
 tutorial_island_captain 0
+
+############################
+#### Kafra - Save Point ####
+############################
+
+# Current Kafra save point location (default: izlude)
+kafra_save_point izlude

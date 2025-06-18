@@ -23,6 +23,7 @@ use Heimdall::ConfigManager;
 use Heimdall::TutorialManager;
 use Heimdall::LevelingManager;
 use Heimdall::QuestManager;
+use Heimdall::GatherFirstZeny;
 
 # Plugin information
 my $plugin_name = 'Heimdall';
@@ -201,7 +202,7 @@ sub onNpcTalkDone {
 # Main loop - core automation logic
 sub onMainLoop {
     return unless $net && $net->getState() == Network::IN_GAME;
-    return unless timeOut($timeout, 3); # Check every 3 seconds
+    return unless timeOut($timeout, 5); # Check every 5 seconds
     
     # Manage character state (death/respawn)
     Heimdall::StateManager::manageCharacterState();
@@ -214,6 +215,15 @@ sub onMainLoop {
         Heimdall::TutorialManager::tutorialShip();
         Heimdall::TutorialManager::tutorialIsland();
         Heimdall::TutorialManager::tutorialFirstJob();
+    }
+
+    # Core automation logic - get a few zeny before going to payon
+    if ($char && $char->{lv} && $char->{lv} < 40 && $char->{jobID} != 0) {
+        my $journey_complete = Heimdall::GatherFirstZeny::startJourney();
+        if ($journey_complete) {
+            # Have enough zeny - go to Payon via Kafra
+            Heimdall::GatherFirstZeny::goToPayon();
+        }
     }
 
     $timeout = time;

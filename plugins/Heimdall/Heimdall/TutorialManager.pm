@@ -106,7 +106,7 @@ sub sailorDialogue {
     # Talk to NPC and send 3 continue responses
     return if Heimdall::CombatManager::isAIBusy();
     main::ai_route($field->baseName, $sailor_x, $sailor_y);
-    main::ai_talkNPC($sailor_x, $sailor_y, "n n n n");
+    main::ai_talkNPC($sailor_x, $sailor_y, "c c c c");
 }
 
 # Captain Dialogue function - talks to Captain NPC for blessing
@@ -158,11 +158,11 @@ sub captainDialogue {
     if ($quest_accepted) {
         # Quest already accepted - second dialogue (4 continues only)
         message "[" . $plugin_name . "] Starting second dialogue with Captain (4 continues)\n", "info";
-        main::ai_talkNPC($captain_x, $captain_y, "n n n n");
+        main::ai_talkNPC($captain_x, $captain_y, "c c c c");
     } else {
         # First time - accept quest (response 0 + 7 continues)
         message "[" . $plugin_name . "] Starting first dialogue with Captain (accept + 7 continues)\n", "info";
-        main::ai_talkNPC($captain_x, $captain_y, "r0 n n n n n n n");
+        main::ai_talkNPC($captain_x, $captain_y, "r0 c c c c c c c");
         
         # Set config flag as backup for future reference
         Heimdall::ConfigManager::setConfig('captain_quest_accepted', 1);
@@ -199,8 +199,6 @@ sub tutorialFirstJob {
             main::ai_route($training_map, undef, undef);
         }
     } elsif (!Heimdall::StateManager::isChatBusy()) {
-        # Close any existing NPC dialogue first
-        Heimdall::QuestManager::closeNPCDialogue();
         changeToFirstJob();
     }
 }
@@ -266,6 +264,7 @@ sub changeToFirstJob {
     # r6 = acolyte
     if (!Heimdall::CombatManager::isAIBusy() && !Heimdall::StateManager::isChatBusy()) {
         Heimdall::StateManager::setChatBusy();
+        message "[" . $plugin_name . "] Job Option: $job_option\n. Full sequence: $dialogue_sequence", "success";
         my $dialogue_sequence = "c r1 c r0 c c r$job_option c";
         main::ai_talkNPC($npc_x, $npc_y, $dialogue_sequence);
         Heimdall::StateManager::setChatNotBusy();

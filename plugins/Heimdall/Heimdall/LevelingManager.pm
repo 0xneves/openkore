@@ -98,10 +98,15 @@ sub checkStatsAndSkills {
     
     # Check for skill points (any amount > 0)
     if ($char->{points_skill} && $char->{points_skill} > 0) {
-        # Only allocate skill points for Novice class
+        # Allocate skill points based on job class
         if ($char->{jobID} == 0) {
-            message "[" . $plugin_name . "] Safety check: Found $char->{points_skill} unallocated skill points (Novice)\n", "info";
+            # Novice - allocate to Basic Skill
+            message "[" . $plugin_name . "] Found $char->{points_skill} unallocated skill points (Novice)\n", "info";
             allocateBasicSkill();
+        } elsif ($char->{jobID} == 6) {
+            # Thief - allocate according to build order
+            message "[" . $plugin_name . "] Found $char->{points_skill} unallocated skill points (Thief)\n", "info";
+            allocateThiefSkills();
         }
     }
 }
@@ -441,6 +446,38 @@ sub allocateBasicSkill {
     # Allocate only ONE skill point per call - let main loop handle the rest
     $messageSender->sendAddSkillPoint($basic_skill_id);
     message "[" . $plugin_name . "] Allocated 1 skill point to Basic Skill (ID: $basic_skill_id)\n", "info";
+}
+
+# Allocate skill points for Thief class following optimal build order
+sub allocateThiefSkills {
+    return unless $char;
+    return unless $char->{points_skill} && $char->{points_skill} > 0;
+    return unless $char->{jobID} == 6; # Only for Thief
+    
+    # Thief skill progression order: 48->10, 49->10, 50->10, 51->5, 52->3, 53->1
+    my @skill_progression = (
+        {id => 48, name => 'Double Attack', target => 10},
+        {id => 49, name => 'Dodge', target => 10},
+        {id => 50, name => 'Steal', target => 10},
+        {id => 51, name => 'Hiding', target => 5},
+        {id => 52, name => 'Envenom', target => 3},
+        {id => 53, name => 'Detoxify', target => 1}
+    );
+    
+    # Find the next skill that needs points
+    for my $skill (@skill_progression) {
+        my $current_level = $char->{skills}{$skill->{id}}{lv} || 0;
+        
+        if ($current_level < $skill->{target}) {
+            # This skill needs more points - allocate one point
+            $messageSender->sendAddSkillPoint($skill->{id});
+            message "[" . $plugin_name . "] Allocated 1 skill point to $skill->{name} (ID: $skill->{id}) - Level: $current_level -> " . ($current_level + 1) . " / $skill->{target}\n", "info";
+            return; # Only allocate ONE skill point per call
+        }
+    }
+    
+    # All skills are maxed according to build
+    message "[" . $plugin_name . "] Thief skill build complete!\n", "success";
 }
 
 1; 

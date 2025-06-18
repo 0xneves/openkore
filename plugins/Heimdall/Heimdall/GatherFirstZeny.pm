@@ -166,7 +166,7 @@ sub goToPayon {
     # Step 1: Move to Izlude if not there
     if ($current_map ne $izlude_map) {
         message "[" . $plugin_name . "] Moving to Izlude to use Kafra teleport\n", "info";
-        main::ai_route($izlude_map, kafra_x, kafra_y);
+        main::ai_route($izlude_map, $kafra_x, $kafra_y);
         return 0;
     }
     

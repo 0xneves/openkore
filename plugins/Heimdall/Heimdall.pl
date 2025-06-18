@@ -24,6 +24,7 @@ use Heimdall::TutorialManager;
 use Heimdall::LevelingManager;
 use Heimdall::QuestManager;
 use Heimdall::GatherFirstZeny;
+use Heimdall::GrindToOrcs;
 
 # Plugin information
 my $plugin_name = 'Heimdall';
@@ -81,6 +82,33 @@ sub onUnload {
     message "[" . $plugin_name . "] Plugin unloading...\n", "success";
     Plugins::delHooks($hooks);
     Commands::unregister($commands);
+}
+
+# Called when HP/SP changes (damage taken, healing, etc.)
+sub onHPChanged {
+    my $args = shift;
+    
+    # Immediately check HP when it changes
+    Heimdall::CombatManager::checkHP();
+}
+
+# Called when a quest is deleted/completed
+sub onQuestDeleted {
+    my $args = shift;
+    
+    # Call the QuestManager to handle quest completion
+    Heimdall::QuestManager::onQuestDeleted($args);
+}
+
+# Called when NPC dialogue ends
+sub onNpcTalkDone {
+    my $args = shift;
+    
+    # Check if we were waiting for dialogue completion
+    if (Heimdall::StateManager::isChatBusy()) {
+        Heimdall::StateManager::setChatNotBusy();
+        message "[" . $plugin_name . "] NPC dialogue completed - chat no longer busy\n", "success";
+    }
 }
 
 # Command handler for Heimdall plugin commands
@@ -172,33 +200,6 @@ sub onCommand {
     }
 }
 
-# Called when HP/SP changes (damage taken, healing, etc.)
-sub onHPChanged {
-    my $args = shift;
-    
-    # Immediately check HP when it changes
-    Heimdall::CombatManager::checkHP();
-}
-
-# Called when a quest is deleted/completed
-sub onQuestDeleted {
-    my $args = shift;
-    
-    # Call the QuestManager to handle quest completion
-    Heimdall::QuestManager::onQuestDeleted($args);
-}
-
-# Called when NPC dialogue ends
-sub onNpcTalkDone {
-    my $args = shift;
-    
-    # Check if we were waiting for dialogue completion
-    if (Heimdall::StateManager::isChatBusy()) {
-        Heimdall::StateManager::setChatNotBusy();
-        message "[" . $plugin_name . "] NPC dialogue completed - chat no longer busy\n", "success";
-    }
-}
-
 # Main loop - core automation logic
 sub onMainLoop {
     return unless $net && $net->getState() == Network::IN_GAME;
@@ -222,7 +223,11 @@ sub onMainLoop {
         my $journey_complete = Heimdall::GatherFirstZeny::startJourney();
         if ($journey_complete) {
             # Have enough zeny - go to Payon via Kafra
-            Heimdall::GatherFirstZeny::goToPayon();
+            my $payon_complete = Heimdall::GatherFirstZeny::goToPayon();
+            if ($payon_complete) {
+                # Successfully in Payon with spawn point saved - start grinding
+                Heimdall::GrindToOrcs::sporeGrind();
+            }
         }
     }
 

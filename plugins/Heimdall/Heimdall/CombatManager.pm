@@ -102,32 +102,14 @@ sub getAvoidedMonstersForMap {
 
 # Check HP and use potions if needed
 sub checkHP {
-    message "[" . $plugin_name . "] DEBUG: checkHP() called\n", "info";
-    
     return unless $char;
-    message "[" . $plugin_name . "] DEBUG: Character object exists\n", "info";
-    
-    message "[" . $plugin_name . "] DEBUG: char->{hp} = " . ($char->{hp} || 'undef') . "\n", "info";
-    message "[" . $plugin_name . "] DEBUG: char->{hp_max} = " . ($char->{hp_max} || 'undef') . "\n", "info";
     
     my $hp_percent = ($char->{hp} / $char->{hp_max}) * 100;
-    message "[" . $plugin_name . "] DEBUG: Calculated HP percent = $hp_percent%\n", "info";
-    
-    my $threshold = Heimdall::ConfigManager::getConfig('hp_threshold');
-    message "[" . $plugin_name . "] DEBUG: HP threshold from config = " . ($threshold || 'undef') . "\n", "info";
-    
-    message "[" . $plugin_name . "] DEBUG: Comparison: $hp_percent < $threshold = " . ($hp_percent < $threshold ? 'TRUE' : 'FALSE') . "\n", "info";
     
     if ($hp_percent < Heimdall::ConfigManager::getConfig('hp_threshold')) {
         message "[" . $plugin_name . "] HP is low ($hp_percent%), attempting to use potion\n", "warning";
-        message "[" . $plugin_name . "] DEBUG: Calling Heimdall::ResourceManager::usePotion()\n", "info";
         Heimdall::ResourceManager::usePotion();
-        message "[" . $plugin_name . "] DEBUG: usePotion() call completed\n", "info";
-    } else {
-        message "[" . $plugin_name . "] DEBUG: HP is okay ($hp_percent%), no potion needed\n", "info";
     }
-    
-    message "[" . $plugin_name . "] DEBUG: checkHP() finished\n", "info";
 }
 
 # Hunt monsters in the current area - Enhanced with intelligent routing

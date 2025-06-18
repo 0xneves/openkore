@@ -25,19 +25,21 @@ sub startJourney {
     if ($current_zeny >= $target_zeny) {
         return 1; # Mission accomplished
     }
+
+    # Get current weight
+    my $current_weight = $char->{weight} || 0;
     
     # Initialize weight tracking if not set
-    message "[" . $plugin_name . "] Weight: $char->{weight}\n", "info";
+    message "[" . $plugin_name . "] Weight: $current_weight\n", "info";
     message "[" . $plugin_name . "] Initial weight: $initial_weight\n", "info";
     if (!defined $initial_weight || $initial_weight == 0) {
-        $initial_weight = $char->{weight} || 0;
+        $initial_weight = $current_weight;
         message "[" . $plugin_name . "] Starting weight tracking: $initial_weight\n", "info";
     }
 
     message "[" . $plugin_name . "] $initial_weight is defined now?", "info";
     
     # Check current weight increase
-    my $current_weight = $char->{weight} || 0;
     my $weight_gained = $current_weight - $initial_weight;
     
     # If we've gained 100+ weight, sell items

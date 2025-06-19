@@ -10,7 +10,7 @@ use Heimdall::CombatManager;
 my $plugin_name = 'Heimdall::GrindToOrcs';
 
 # Spore grind function - handles level progression from Payon to Prontera
-sub sporeGrind {
+sub orcGrind {
     return unless $char;
     return unless $field;
     

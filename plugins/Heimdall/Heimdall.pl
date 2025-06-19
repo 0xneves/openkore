@@ -221,15 +221,15 @@ sub onMainLoop {
         Heimdall::TutorialManager::tutorialFirstJob();
     }
 
-    # Core automation logic - get a few zeny before going to payon
     if ($char && $char->{lv} && $char->{lv} < 40 && $char->{jobID} != 0) {
+        # Core automation logic - get a few zeny before going to payon
         my $journey_complete = Heimdall::GatherFirstZeny::startJourney();
         if ($journey_complete) {
             # Have enough zeny - go to Payon via Kafra
             my $payon_complete = Heimdall::GatherFirstZeny::goToPayon();
             if ($payon_complete) {
                 # Successfully in Payon with spawn point saved - start grinding
-                Heimdall::GrindToOrcs::sporeGrind();
+                Heimdall::GrindToOrcs::orcGrind();
             }
         }
     }

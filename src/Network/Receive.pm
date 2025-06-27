@@ -34,7 +34,6 @@ use Compress::Zlib;
 use AI;
 use Globals;
 use Field;
-use InventoryList;
 #use Settings;
 use Log qw(message warning error debug);
 use FileParsers qw(updateMonsterLUT updateNPCLUT);
@@ -1143,6 +1142,12 @@ sub reconstruct_account_server_info {
 			len => 36,
 			types => 'a4 v Z20 v5',
 			keys => [qw(ip port name state users property sid unknown)],
+		};
+	} elsif ($args->{switch} eq '0C32') {
+		$serverInfo = {
+			len => 165,
+			types => 'a4 v Z20 v3 a128 a5',
+			keys => [qw(ip port name users state property ip_port unknown)],
 		};
 	} else {
 		$serverInfo = {
@@ -3934,13 +3939,7 @@ sub vender_items_list {
 
 	my $player = Actor::get($args->{venderID});
 
-	eval {
-		$venderItemList->clear();
-	};
-	if ($@) {
-		warning "Error clearing venderItemList: $@\n";
-		$venderItemList = InventoryList->new;
-	}
+	$venderItemList->clear;
 
 	my $msg = TF("%s\n" .
 		"#  Name                                      Type                           Price Amount\n",
@@ -3951,19 +3950,7 @@ sub vender_items_list {
  		@$item{qw( price amount ID type nameID identified broken upgrade cards options location sprite_id )} = unpack $item_pack, substr $args->{itemList}, $i, $item_len;
 
 		$item->{name} = itemName($item);
-		
-		# Check if item with same ID already exists before adding
-		if (defined $item->{ID}) {
-			my $existing_item = $venderItemList->getByID($item->{ID});
-			if (!$existing_item) {
-				$venderItemList->add($item);
-			} else {
-				debug("Skipping duplicate vender item with ID: " . unpack("V", $item->{ID}) . " (Name: $item->{name})\n", "vending", 2);
-				next; # Skip this item and continue to next iteration
-			}
-		} else {
-			$venderItemList->add($item);
-		}
+		$venderItemList->add($item);
 
 		debug("Item added to Vender Store: $item->{name} - $item->{price} z\n", "vending", 2);
 
@@ -7095,35 +7082,44 @@ sub item_exists {
 # Makes an item disappear from the ground.
 # 00A1 <id>.L (ZC_ITEM_DISAPPEAR)
 sub item_disappeared {
-	my ($self, $args) = @_;
+	my ( $self, $args ) = @_;
 	return unless changeToInGameState();
 
-	my $item = $itemsList->getByID($args->{ID});
-	if ($item) {
-		if ($config{attackLooters} && AI::action ne "sitAuto" && pickupitems($item->{name}, $item->{nameID}) > 0) {
-			for my Actor::Monster $monster (@$monstersList) { # attack looter code
-				if (my $control = mon_control($monster->name,$monster->{nameID})) {
-					next if ( ($control->{attack_auto}  ne "" && $control->{attack_auto} == -1)
-						|| ($control->{attack_lvl}  ne "" && $control->{attack_lvl} > $char->{lv})
-						|| ($control->{attack_jlvl} ne "" && $control->{attack_jlvl} > $char->{lv_job})
-						|| ($control->{attack_hp}   ne "" && $control->{attack_hp} > $char->{hp})
-						|| ($control->{attack_sp}   ne "" && $control->{attack_sp} > $char->{sp})
-						);
+	my $item = $itemsList->getByID( $args->{ID} );
+	if ( $item ) {
+		if ( $config{attackLooters} && AI::action ne "sitAuto" && pickupitems( $item->{name}, $item->{nameID} ) > 0 ) {
+			for my Actor::Monster $monster ( @$monstersList ) {    # attack looter code
+				if ( my $control = mon_control( $monster->name, $monster->{nameID} ) ) {
+					next
+						if ( ( $control->{attack_auto} ne "" && $control->{attack_auto} == -1 )
+						|| ( $control->{attack_lvl} ne ""  && $control->{attack_lvl} > $char->{lv} )
+						|| ( $control->{attack_jlvl} ne "" && $control->{attack_jlvl} > $char->{lv_job} )
+						|| ( $control->{attack_hp} ne ""   && $control->{attack_hp} > $char->{hp} )
+						|| ( $control->{attack_sp} ne ""   && $control->{attack_sp} > $char->{sp} ) );
 				}
-				if (distance($item->{pos}, $monster->{pos}) <= ($config{attackLooters_dist} || 0)) {
-					attack($monster->{ID});
-					message TF("Attack Looter: %s looted %s\n", $monster->nameIdx, $item->{name}), "looter";
-					last;
+				if ( distance( $item->{pos}, $monster->{pos} ) <= ( $config{attackLooters_dist} || 0 ) ) {
+					my %plugin_args;
+					$plugin_args{monster} = $monster;
+					$plugin_args{item}    = $item;
+					$plugin_args{return}  = 0;
+					Plugins::callHook( 'check_attackLooter' => \%plugin_args );
+					unless ( $plugin_args{return} ) {
+						message TF( "Looter: %s looted %s - Adding it to looters list to be attacked\n",
+							$monster->nameIdx, $item->{name} ),
+							"looter";
+						$monster->{attackLooters} = 1;
+						last;
+					}
 				}
 			}
 		}
 
 		debug "Item Disappeared: $item->{name} ($item->{binID})\n", "parseMsg_presence";
 		my $ID = $args->{ID};
-		$items_old{$ID} = $item->deepCopy();
+		$items_old{$ID}              = $item->deepCopy();
 		$items_old{$ID}{disappeared} = 1;
-		$items_old{$ID}{gone_time} = time;
-		$itemsList->removeByID($ID);
+		$items_old{$ID}{gone_time}   = time;
+		$itemsList->removeByID( $ID );
 	}
 }
 
@@ -8017,12 +8013,74 @@ sub remain_time_info {
 }
 
 sub received_login_token {
-	my ($self, $args) = @_;
-	# XKore mode 1 / 3.
-	return if ($self->{net}->version == 1);
-	my $master = $masterServers{$config{master}};
-	# rathena use 0064 not 0825
-	$messageSender->sendTokenToServer($config{username}, $config{password}, $master->{master_version}, $master->{version}, $args->{login_token}, $args->{len}, $master->{OTP_ip}, $master->{OTP_port});
+    my ($self, $args) = @_;
+
+    # Skip in XKore mode 1 / 3
+    return if $self->{net}->version == 1;
+
+    my $master = $masterServers{$config{master}};
+    my $login_type = $args->{login_type};
+
+    if ($login_type == 0) {
+		$self->{otp_fail_count} = 0;
+        # rAthena uses 0064 not 0825
+        $messageSender->sendTokenToServer(
+            $config{username},
+            $config{password},
+            $master->{master_version},
+            $master->{version},
+            $args->{login_token},
+            $args->{len},
+            $master->{ip},
+            $master->{port}
+        );
+    
+    } elsif ($login_type == 400 || $login_type == 1000) {
+        die 'ERROR: otpSeed is not set in config.txt' unless $config{otpSeed};
+
+        my $otp;
+        Plugins::callHook('request_otp_login', { otp => \$otp, seed => $config{otpSeed} });
+    	unless (defined $otp && length $otp) { 
+			error "No Plugin returned a OTP code for account $config{username}\n", 'connection';
+			$otp = $interface->query(T(', please enter your OTP: ')); 
+		}
+        $messageSender->sendOtpToServer($otp);
+
+	} elsif ($login_type == 300 || $login_type == 500) {
+		$self->{otp_fail_count}++;
+		error "OTP failure attempt $self->{otp_fail_count} for $config{username}\n", 'connection';
+
+		if ($self->{otp_fail_count} >= 3) {
+			error "Exceeded maximum OTP attempts for account $config{username}. Aborting.\n", 'connection';
+			Misc::quit();
+		}
+
+        error(($login_type == 300 ? "OTP token malformed" : "Wrong OTP") . " for account $config{username}\n", 'connection');
+
+        unless ($config{otpSeed}) {
+			error 'ERROR: otpSeed is not set in config.txt', 'connection';
+			Misc::quit();
+		}
+
+        my $otp;
+        Plugins::callHook('request_otp_login', { otp => \$otp, seed => $config{otpSeed} });
+
+        unless (defined $otp && length $otp) {
+            error "No Plugin returned an OTP code for account $config{username}\n", 'connection';
+            debug "If OTP keeps failing, make sure your system clock is accurate (e.g., synced with NTP)\n", 'connection';
+            $otp = $interface->query(T('Please enter the OTP code: '));
+        }
+
+        $messageSender->sendOtpToServer($otp);
+    
+    } elsif ($login_type == 600) {
+        error "Password Error for account $config{username}\n", 'connection';
+        Misc::quit();
+    
+    } else {
+        error "Unknown login_type $login_type\n", 'connection';
+		Misc::quit();
+    }
 }
 
 # this info will be sent to xkore 2 clients
@@ -11527,10 +11585,9 @@ sub skill_cast {
 	$control = mon_control($monster->name,$monster->{nameID}) if ($monster);
 	if (AI::state == AI::AUTO && $control->{skillcancel_auto}) {
 		if ($targetID eq $accountID || $dist > 0 || (AI::action eq "attack" && AI::args->{ID} ne $sourceID)) {
-			message TF("Monster Skill - switch Target to : %s (%d)\n", $monster->name, $monster->{binID});
-			$char->sendAttackStop;
-			AI::dequeue;
-			attack($sourceID);
+			message TF( "Monster Skill - %s (%d) - Adding it to monsterSkillCancel list to be attacked\n",
+				$monster->name, $monster->{binID} );
+			$monster->{monsterSkillCancel} = 1;
 		}
 
 		# Skill area casting -> running to monster's back

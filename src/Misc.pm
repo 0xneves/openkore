@@ -2520,8 +2520,11 @@ sub meetingPosition {
 		return;
 	}
 
+	my $extra_time_actor = $timeout{'meetingPosition_extra_time_actor'}{'timeout'} ? $timeout{'meetingPosition_extra_time_actor'}{'timeout'} : 0.2;
+	my $extra_time_target = $timeout{'meetingPosition_extra_time_target'}{'timeout'} ? $timeout{'meetingPosition_extra_time_target'}{'timeout'} : 0.2;
+
 	my $mySpeed = ($actor->{walk_speed} || 0.12);
-	my $timeSinceActorMoved = time - $actor->{time_move};
+	my $timeSinceActorMoved = time - $actor->{time_move} + $extra_time_actor;
 
 	my $my_solution;
 	my $timeActorFinishMove;
@@ -2602,7 +2605,7 @@ sub meetingPosition {
 	}
 
 	my $targetSpeed = ($target->{walk_speed} || 0.12);
-	my $timeSinceTargetMoved = time - $target->{time_move};
+	my $timeSinceTargetMoved = time - $target->{time_move} + $extra_time_target;
 
 	my $target_solution = get_solution($field, $target->{pos}, $target->{pos_to});
 
@@ -2645,7 +2648,7 @@ sub meetingPosition {
 	my $masterSpeed;
 	if ($masterPos) {
 		$masterSpeed = ($master->{walk_speed} || 0.12);
-		$timeSinceMasterMoved = time - $master->{time_move};
+		$timeSinceMasterMoved = time - $master->{time_move} + $extra_time_actor;
 
 		$master_solution = get_solution($field, $master->{pos}, $master->{pos_to});
 
@@ -2683,6 +2686,11 @@ sub meetingPosition {
 		$allspots{$spot->{x}}{$spot->{y}} = 1;
 	}
 
+	my %prohibitedSpots;
+	foreach my $prohibited_actor (@$playersList, @$monstersList, @$npcsList, @$petsList, @$slavesList, @$elementalsList) {
+		$prohibitedSpots{$prohibited_actor->{pos_to}{x}}{$prohibited_actor->{pos_to}{y}} = 1;
+	}
+
 	my $best_spot;
 	my $best_targetPosInStep;
 	my $best_dist_to_target;
@@ -2700,6 +2708,9 @@ sub meetingPosition {
 
 			# 1. It must be walkable.
 			next unless ($field->isWalkable($spot->{x}, $spot->{y}));
+			
+			# 1.2 It must not be occupied
+			next if (exists $prohibitedSpots{$spot->{x}} && exists $prohibitedSpots{$spot->{x}}{$spot->{y}});
 
 			# 2. It must not be close to a portal.
 			next if (positionNearPortal($spot, $config{'attackMinPortalDistance'}));
@@ -3458,44 +3469,6 @@ sub updateDamageTables {
 						$monster, $player, $player->verb(T('your'), T('its')), $config{$player->{configPrefix}.'teleportAuto_hp'}), "teleport";
 					$teleport = 1;
 
-				} elsif (
-					$config{$player->{configPrefix}.'attackChangeTarget'}
-					&& (
-						$player->action eq 'route' && $player->action(1) eq 'attack'
-						or $player->action eq 'move' && $player->action(2) eq 'attack'
-					)
-					&& $player->args->{attackID} && $player->args->{attackID} ne $sourceID
-				) {
-					my $attackTarget = Actor::get($player->args->{attackID});
-					my $attackSeq = ($player->action eq 'route') ? $player->args(1) : $player->args(2);
-					if (
-						!($accountID eq $targetID ? $attackTarget->{dmgToYou} : $attackTarget->{dmgToPlayer}{$targetID})
-						&& !($accountID eq $targetID ? $attackTarget->{dmgToYou} : $attackTarget->{dmgFromPlayer}{$targetID})
-						&& distance($monster->{pos_to}, calcPosition($player)) <= $attackSeq->{attackMethod}{distance}
-					) {
-						my $ignore = 0;
-						# Don't attack ignored monsters
-						if ((my $control = mon_control($monster->{name},$monster->{nameID}))) {
-							$ignore = 1 if ( ($control->{attack_auto} == -1)
-								|| ($control->{attack_lvl} ne "" && $control->{attack_lvl} > $char->{lv})
-								|| ($control->{attack_jlvl} ne "" && $control->{attack_jlvl} > $char->{lv_job})
-								|| ($control->{attack_hp}  ne "" && $control->{attack_hp} > $char->{hp})
-								|| ($control->{attack_sp}  ne "" && $control->{attack_sp} > $char->{sp})
-								|| ($accountID eq $targetID && $control->{attack_auto} == 3 && ($monster->{dmgToYou} || $monster->{missedYou} || $monster->{dmgFromYou}))
-								);
-						}
-						unless ($ignore) {
-							# Change target to closer aggressive monster
-							message TF("%s %s target to aggressive %s\n",
-								$player, $player->verb(T('change'), T('changes')), $monster);
-							$player->sendAttackStop;
-							$player->dequeue;
-							$player->dequeue if $player->action eq 'route';
-							$player->dequeue;
-							$player->attack($sourceID);
-						}
-					}
-
 				} elsif ($accountID eq $targetID && $player->action eq "attack" && mon_control($monster->{name}, $monster->{nameID})->{attack_auto} == 3
 					&& ($monster->{dmgToYou} || $monster->{missedYou} || $monster->{dmgFromYou})) {
 
@@ -3729,7 +3702,8 @@ sub getBestTarget {
 		next if (positionNearPlayer($pos, $playerDist)
 			|| positionNearPortal($pos, $portalDist)
 		);
-		if ((my $control = mon_control($monster->{name},$monster->{nameID}))) {
+		my $control = mon_control($monster->{name},$monster->{nameID});
+		if (defined $control) {
 			next if ( ($control->{attack_auto} == -1)
 				|| ($control->{attack_lvl} ne "" && $control->{attack_lvl} > $char->{lv})
 				|| ($control->{attack_jlvl} ne "" && $control->{attack_jlvl} > $char->{lv_job})
@@ -3739,6 +3713,15 @@ sub getBestTarget {
 				|| ($control->{attack_auto} == 0 && !($monster->{dmgToYou} || $monster->{missedYou}))
 			);
 		}
+		
+		my %plugin_args;
+		$plugin_args{target} = $monster;
+		$plugin_args{control} = $control;
+		$plugin_args{attackCheckLOS} = $attackCheckLOS;
+		$plugin_args{attackCanSnipe} = $attackCanSnipe;
+		$plugin_args{return} = 0;
+		Plugins::callHook('getBestTarget' => \%plugin_args);
+		next if ($plugin_args{return});
 
 		if (!$field->checkLOS($myPos, $pos, $attackCanSnipe)) {
 			push(@noLOSMonsters, $_);
@@ -3773,6 +3756,10 @@ sub getBestTarget {
 			my $monster = $monsters{$noLOSMonsters[$index]};
 			# TODO: Is there any situation where we should use calcPosFromPathfinding or calcPosFromTime here?
 			my $pos = $noLOSMonsters_pos[$index];
+
+			# avoid get targets away from attackRouteMaxPathDistance
+			next if(blockDistance($myPos, $pos) >= $config{attackRouteMaxPathDistance});
+
 			$pathfinding->reset(
 				start => $myPos,
 				dest  => $pos,

@@ -352,9 +352,11 @@ sub checkConnection {
 			return;
 		}
 		$reconnectCount++;
-		$self->{enable_checksum} = 0;
-		$self->serverConnect($master->{ip}, $master->{port});
-
+		if (defined $master->{OTP_ip} && defined $master->{OTP_port}) {
+			$self->serverConnect($master->{OTP_ip}, $master->{OTP_port});
+		} else {
+			$self->serverConnect($master->{ip}, $master->{port});
+		}
 		# call plugin's hook to determine if we can continue the work
 		if ($self->serverAlive) {
 			Plugins::callHook('Network::serverConnect/master');
@@ -424,6 +426,7 @@ sub checkConnection {
 	} elsif ($self->getState() == 1.3) {
 		$conState = 1;
 		my $master = $masterServer = $masterServers{$config{'master'}};
+
 		if ($master->{secureLogin} >= 1) {
 			my $code;
 
@@ -501,7 +504,6 @@ sub checkConnection {
 			$conState_tries++;
 			$captcha_state = 0;
 
-			$self->{enable_checksum} = 0;
 			if ($master->{charServer_ip}) {
 				$self->serverConnect($master->{charServer_ip}, $master->{charServer_port});
 			} elsif ($servers[$config{'server'}]) {
@@ -561,7 +563,6 @@ sub checkConnection {
 		if(!$self->serverAlive() && $config{'char'} ne "" && !$conState_tries) {
 			message T("Connecting to Character Select Server...\n"), "connection";
 			$conState_tries++;
-			$self->{enable_checksum} = 0;
 			$self->serverConnect($servers[$config{'server'}]{'ip'}, $servers[$config{'server'}]{'port'});
 
 			# call plugin's hook to determine if we can continue the connection
@@ -569,7 +570,6 @@ sub checkConnection {
 				Plugins::callHook('Network::serverConnect/charselect');
 				return if ($conState == 1.5);
 			}
-
 			$messageSender->sendCharLogin($config{'char'});
 			$timeout{'charlogin'}{'time'} = time;
 
@@ -600,8 +600,6 @@ sub checkConnection {
 				$ip = $master->{mapServer_ip} || $config{forceMapIP} || $map_ip;
 				$port = $master->{mapServer_port} || $map_port;
 			}
-			$self->{enable_checksum} = 1;
-			$self->{counter_checksum} = 0;
 			$self->serverConnect($ip, $port);
 
 			# call plugin's hook to determine if we can continue the connection
@@ -610,7 +608,7 @@ sub checkConnection {
 				return if ($conState == 1.5);
 			}
 
-			$messageSender->sendPing() if $master->{serverType} eq 'ROla';
+			$messageSender->sendPing() if (grep { $masterServer->{serverType} eq $_ } qw(ROla));
 			$messageSender->sendMapLogin($accountID, $charID, $sessionID, $accountSex2);
 			$timeout_ex{master}{time} = time;
 			$timeout_ex{master}{timeout} = $timeout{reconnect}{timeout};

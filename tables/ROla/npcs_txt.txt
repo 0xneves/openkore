@@ -106322,7 +106322,7 @@ Ou você deseja solicitar uma missão?"
 R0dIBg|"[Mirko]
 Tenha cuidado."
 SEdIBg|"[Mirko]
-Encontre Gierath Intrépido e
+Encontre Giearth Intrépido e
 traga ^5C33170 Areias Ressecadas^000000."
 S0dIBg|"[Mirko]
 Ok, vou ficar esperando aqui."
